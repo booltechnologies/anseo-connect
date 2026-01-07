@@ -281,7 +281,7 @@
     },
     "aiConstraints": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "allowedActions": {
           "type": "array",
@@ -297,12 +297,21 @@
         },
         "notes": {
           "type": "string"
+        },
+        "allowSummarisation": {
+          "type": "boolean"
+        },
+        "allowDraftingGuardianMessages": {
+          "type": "boolean"
+        },
+        "allowExternalReferral": {
+          "type": "boolean"
         }
       }
     },
     "audit": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -312,12 +321,21 @@
         },
         "recordViewEvents": {
           "type": "boolean"
+        },
+        "requiredFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "immutable": {
+          "type": "boolean"
         }
       }
     },
     "playbook": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
         "checklists",
         "ui"
@@ -327,7 +345,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "additionalProperties": false,
+            "additionalProperties": true,
             "required": [
               "checklistId",
               "name",
@@ -367,6 +385,9 @@
                   }
                 },
                 "minItems": 1
+              },
+              "severity": {
+                "type": "string"
               }
             }
           },
@@ -391,6 +412,9 @@
               "type": "boolean"
             }
           }
+        },
+        "enabled": {
+          "type": "boolean"
         }
       }
     }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://anseo.ie/schemas/policy-pack/common.json",
+  "$id": "https://anseo.ie/schemas/policy-pack/common.schema.json",
   "title": "Common definitions for Anseo Connect policy packs",
   "type": "object",
   "$defs": {

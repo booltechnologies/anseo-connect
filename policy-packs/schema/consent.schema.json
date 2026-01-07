@@ -79,13 +79,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "name",
           "when",
-          "selectChannelOrder",
-          "gate",
-          "onBlocked"
+          "gate"
         ],
         "properties": {
           "name": {
@@ -104,23 +102,23 @@
           },
           "gate": {
             "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "blockIfChannelOptedOut",
-              "blockIfExplicitOptInRequiredAndNotOptedIn"
-            ],
+            "additionalProperties": true,
+            "required": [],
             "properties": {
               "blockIfChannelOptedOut": {
                 "type": "boolean"
               },
               "blockIfExplicitOptInRequiredAndNotOptedIn": {
                 "type": "boolean"
+              },
+              "blockUnlessExplicitOptIn": {
+                "type": "boolean"
               }
             }
           },
           "onBlocked": {
             "type": "object",
-            "additionalProperties": false,
+            "additionalProperties": true,
             "required": [
               "fallbackToNextPermittedChannel",
               "createTask"
@@ -156,6 +154,13 @@
           },
           "notes": {
             "type": "string"
+          },
+          "channelOrder": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
           }
         }
       },
@@ -163,16 +168,22 @@
     },
     "audit": {
       "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "enabled",
-        "recordDecision"
-      ],
+      "additionalProperties": true,
+      "required": [],
       "properties": {
         "enabled": {
           "type": "boolean"
         },
         "recordDecision": {
+          "type": "boolean"
+        },
+        "logFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retainWhileEnrolled": {
           "type": "boolean"
         }
       }

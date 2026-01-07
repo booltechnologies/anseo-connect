@@ -63,10 +63,9 @@
     },
     "recommendations": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": [
-        "enabled",
-        "topN"
+        "enabled"
       ],
       "properties": {
         "enabled": {
@@ -75,7 +74,14 @@
         "topN": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 20
+          "maximum": 50
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "minItems": 0
         }
       }
     }
