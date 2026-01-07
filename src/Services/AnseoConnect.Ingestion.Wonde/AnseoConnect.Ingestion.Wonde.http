@@ -1,0 +1,6 @@
+@AnseoConnect.Ingestion.Wonde_HostAddress = http://localhost:5238
+
+GET {{AnseoConnect.Ingestion.Wonde_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

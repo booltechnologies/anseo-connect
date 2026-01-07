@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Services/">
+    <Project Path="Services/AnseoConnect.ApiGateway/AnseoConnect.ApiGateway.csproj" />
+    <Project Path="Services/AnseoConnect.Comms/AnseoConnect.Comms.csproj" />
+    <Project Path="Services/AnseoConnect.Ingestion.Wonde/AnseoConnect.Ingestion.Wonde.csproj" />
+    <Project Path="Services/AnseoConnect.Workflow/AnseoConnect.Workflow.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/AnseoConnect.Contracts/AnseoConnect.Contracts.csproj" />
+    <Project Path="Shared/AnseoConnect.Data/AnseoConnect.Data.csproj" />
+    <Project Path="Shared/AnseoConnect.PolicyRuntime/AnseoConnect.PolicyRuntime.csproj" />
+    <Project Path="Shared/AnseoConnect.Shared/AnseoConnect.Shared.csproj" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="../tools/PolicyPackTool/PolicyPackTool.csproj" Id="59e6d26f-fbef-415b-9df4-2a37aab53ad5" />
+  </Folder>
+</Solution>
