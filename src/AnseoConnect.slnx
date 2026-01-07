@@ -12,6 +12,7 @@
     <Project Path="Shared/AnseoConnect.Shared/AnseoConnect.Shared.csproj" />
   </Folder>
   <Folder Name="/Tools/">
+    <File Path="TextFile1.txt" />
     <Project Path="../tools/PolicyPackTool/PolicyPackTool.csproj" Id="59e6d26f-fbef-415b-9df4-2a37aab53ad5" />
   </Folder>
 </Solution>
