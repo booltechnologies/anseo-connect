@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anseo.ie/schemas/policy-pack/consent.schema.json",
+  "title": "Consent model module schema (Anseo Connect)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "version",
+    "messageTypes",
+    "channels",
+    "states",
+    "routingRules",
+    "audit"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messageTypes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "channels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "providerOptions",
+          "defaultRule"
+        ],
+        "properties": {
+          "providerOptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "defaultRule": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requireExplicitOptIn",
+              "respectOptOut"
+            ],
+            "properties": {
+              "requireExplicitOptIn": {
+                "type": "boolean"
+              },
+              "respectOptOut": {
+                "type": "boolean"
+              }
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "minProperties": 1
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "routingRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "when",
+          "selectChannelOrder",
+          "gate",
+          "onBlocked"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when": {
+            "type": "object"
+          },
+          "selectChannelOrder": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "gate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "blockIfChannelOptedOut",
+              "blockIfExplicitOptInRequiredAndNotOptedIn"
+            ],
+            "properties": {
+              "blockIfChannelOptedOut": {
+                "type": "boolean"
+              },
+              "blockIfExplicitOptInRequiredAndNotOptedIn": {
+                "type": "boolean"
+              }
+            }
+          },
+          "onBlocked": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fallbackToNextPermittedChannel",
+              "createTask"
+            ],
+            "properties": {
+              "fallbackToNextPermittedChannel": {
+                "type": "boolean"
+              },
+              "createTask": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "assignToRole",
+                  "note"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "assignToRole": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "recordDecision"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "recordDecision": {
+          "type": "boolean"
+        }
+      }
+    },
+    "consentCapture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "platformCanRecordOptOut",
+        "platformCanRecordOptIn",
+        "sources",
+        "notes"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "platformCanRecordOptOut": {
+          "type": "boolean"
+        },
+        "platformCanRecordOptIn": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

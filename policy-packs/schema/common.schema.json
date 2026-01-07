@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anseo.ie/schemas/policy-pack/common.json",
+  "title": "Common definitions for Anseo Connect policy packs",
+  "type": "object",
+  "$defs": {
+    "SemVer": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "ISODate": {
+      "type": "string",
+      "format": "date"
+    },
+    "Scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "COUNTRY",
+            "TENANT"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "PolicyTest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "input",
+        "expected"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 3
+        },
+        "input": {
+          "type": "object"
+        },
+        "expected": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

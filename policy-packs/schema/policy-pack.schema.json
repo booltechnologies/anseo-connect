@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anseo.ie/schemas/policy-pack/policy-pack.schema.json",
+  "title": "Anseo Connect Policy Pack (root)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "policyPackId",
+    "version",
+    "scope",
+    "effectiveFrom"
+  ],
+  "properties": {
+    "policyPackId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "$ref": "./common.schema.json#/$defs/SemVer"
+    },
+    "scope": {
+      "$ref": "./common.schema.json#/$defs/Scope"
+    },
+    "effectiveFrom": {
+      "$ref": "./common.schema.json#/$defs/ISODate"
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "$ref": "./common.schema.json#/$defs/PolicyTest"
+      }
+    },
+    "safeguarding": {
+      "$ref": "./safeguarding.schema.json"
+    },
+    "barrierTaxonomy": {
+      "$ref": "./barriers.schema.json"
+    },
+    "supportsCatalogue": {
+      "$ref": "./supports.schema.json"
+    },
+    "consentModel": {
+      "$ref": "./consent.schema.json"
+    },
+    "attendancePlanPlaybook": {
+      "$ref": "./attendance-plan.schema.json"
+    },
+    "reasonTaxonomy": {
+      "$ref": "./reason-taxonomy.schema.json"
+    }
+  }
+}

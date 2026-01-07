@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anseo.ie/schemas/policy-pack/attendance-plan.schema.json",
+  "title": "Attendance plan playbook module schema (Anseo Connect)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "appliesToTier",
+    "checklists",
+    "ui"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "appliesToTier": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "checklists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "checklistId",
+          "name",
+          "items"
+        ],
+        "properties": {
+          "checklistId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "label",
+                "required"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "minItems": 1
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireChecklistCompletionToPromoteTier",
+        "allowPartialSave",
+        "showAsTimeline"
+      ],
+      "properties": {
+        "requireChecklistCompletionToPromoteTier": {
+          "type": "boolean"
+        },
+        "allowPartialSave": {
+          "type": "boolean"
+        },
+        "showAsTimeline": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

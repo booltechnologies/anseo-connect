@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anseo.ie/schemas/policy-pack/barriers.schema.json",
+  "title": "Barrier taxonomy module schema (Anseo Connect)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "version",
+    "categories",
+    "captureRules"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "label"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "captureRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredAtTier2",
+        "allowMultiple",
+        "requirePrimaryBarrier",
+        "requireNotes"
+      ],
+      "properties": {
+        "requiredAtTier2": {
+          "type": "boolean"
+        },
+        "allowMultiple": {
+          "type": "boolean"
+        },
+        "requirePrimaryBarrier": {
+          "type": "boolean"
+        },
+        "requireNotes": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
