@@ -8,8 +8,10 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -17,10 +19,13 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore
-        run: dotnet restore src/AnseoConnect.sln
+        run: dotnet restore src/AnseoConnect.slnx
 
       - name: Build
-        run: dotnet build src/AnseoConnect.sln -c Release --no-restore
+        run: dotnet build src/AnseoConnect.slnx -c Release --no-restore
 
       - name: Policy pack schema validation
         run: dotnet run --project tools/PolicyPackTool -- validate policy-packs
+
+      - name: Policy pack tests
+        run: dotnet run --project tools/PolicyPackTool -- test policy-packs
