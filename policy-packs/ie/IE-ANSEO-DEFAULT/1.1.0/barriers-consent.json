@@ -1,0 +1,418 @@
+{
+  "policyPackId": "IE-ANSEO-DEFAULT",
+  "version": "1.1.0",
+  "scope": {
+    "type": "COUNTRY",
+    "code": "IE"
+  },
+  "effectiveFrom": "2026-01-01",
+  "barrierTaxonomy": {
+    "enabled": true,
+    "version": "v1",
+    "categories": [
+      {
+        "code": "HEALTH_PHYSICAL",
+        "label": "Physical health / illness"
+      },
+      {
+        "code": "HEALTH_MENTAL",
+        "label": "Mental health / anxiety"
+      },
+      {
+        "code": "TRANSPORT",
+        "label": "Transport / commute issues"
+      },
+      {
+        "code": "BULLYING_SAFETY",
+        "label": "Bullying / safety concerns"
+      },
+      {
+        "code": "CARING_RESPONSIBILITIES",
+        "label": "Caring responsibilities"
+      },
+      {
+        "code": "HOUSING_INSTABILITY",
+        "label": "Housing instability / homelessness"
+      },
+      {
+        "code": "FAMILY_CIRCUMSTANCES",
+        "label": "Family circumstances"
+      },
+      {
+        "code": "FINANCIAL",
+        "label": "Financial barriers"
+      },
+      {
+        "code": "ENGAGEMENT_DISENGAGEMENT",
+        "label": "Engagement / motivation"
+      },
+      {
+        "code": "SEN_ADDITIONAL_NEEDS",
+        "label": "Additional needs / SEN"
+      },
+      {
+        "code": "SCHOOL_FACTOR",
+        "label": "School factors (timetable, placement, conflict)"
+      },
+      {
+        "code": "UNKNOWN",
+        "label": "Unknown / not disclosed"
+      }
+    ],
+    "captureRules": {
+      "requiredAtTier2": true,
+      "allowMultiple": true,
+      "requirePrimaryBarrier": true,
+      "requireNotes": false
+    }
+  },
+  "supportsCatalogue": {
+    "enabled": true,
+    "version": "v1",
+    "supports": [
+      {
+        "id": "PASTORAL_CHECKIN",
+        "label": "Pastoral check-in (year head/tutor)",
+        "owners": [
+          "YEAR_HEAD",
+          "TUTOR"
+        ],
+        "defaultSlaDays": 3,
+        "barrierTags": [
+          "ENGAGEMENT_DISENGAGEMENT",
+          "FAMILY_CIRCUMSTANCES",
+          "SCHOOL_FACTOR"
+        ]
+      },
+      {
+        "id": "GUIDANCE_REFERRAL",
+        "label": "Guidance/counselling referral",
+        "owners": [
+          "GUIDANCE_COUNSELLOR",
+          "DLP"
+        ],
+        "defaultSlaDays": 7,
+        "barrierTags": [
+          "HEALTH_MENTAL",
+          "BULLYING_SAFETY"
+        ]
+      },
+      {
+        "id": "BULLYING_PROTOCOL",
+        "label": "Activate anti-bullying process",
+        "owners": [
+          "DLP",
+          "PRINCIPAL",
+          "YEAR_HEAD"
+        ],
+        "defaultSlaDays": 2,
+        "barrierTags": [
+          "BULLYING_SAFETY"
+        ]
+      },
+      {
+        "id": "TRANSPORT_SUPPORT_TASK",
+        "label": "Explore transport supports (routes, bus, timing)",
+        "owners": [
+          "ATTENDANCE_ADMIN",
+          "YEAR_HEAD"
+        ],
+        "defaultSlaDays": 5,
+        "barrierTags": [
+          "TRANSPORT"
+        ]
+      },
+      {
+        "id": "MEETING_GUARDIAN",
+        "label": "Meeting with guardian (attendance plan review)",
+        "owners": [
+          "YEAR_HEAD",
+          "ATTENDANCE_ADMIN"
+        ],
+        "defaultSlaDays": 10,
+        "barrierTags": [
+          "TRANSPORT",
+          "FAMILY_CIRCUMSTANCES",
+          "ENGAGEMENT_DISENGAGEMENT",
+          "FINANCIAL"
+        ]
+      },
+      {
+        "id": "LEARNING_SUPPORT",
+        "label": "Learning support/SEN review",
+        "owners": [
+          "SENCO",
+          "YEAR_HEAD"
+        ],
+        "defaultSlaDays": 14,
+        "barrierTags": [
+          "SEN_ADDITIONAL_NEEDS",
+          "ENGAGEMENT_DISENGAGEMENT"
+        ]
+      },
+      {
+        "id": "INTERNAL_WELFARE_REVIEW",
+        "label": "Internal welfare review meeting",
+        "owners": [
+          "PRINCIPAL",
+          "DLP",
+          "YEAR_HEAD"
+        ],
+        "defaultSlaDays": 7,
+        "barrierTags": [
+          "HOUSING_INSTABILITY",
+          "CARING_RESPONSIBILITIES",
+          "HEALTH_MENTAL",
+          "FAMILY_CIRCUMSTANCES"
+        ]
+      }
+    ],
+    "recommendations": {
+      "enabled": true,
+      "rules": [
+        {
+          "whenAnyBarrier": [
+            "HEALTH_MENTAL"
+          ],
+          "suggestSupports": [
+            "GUIDANCE_REFERRAL",
+            "MEETING_GUARDIAN"
+          ]
+        },
+        {
+          "whenAnyBarrier": [
+            "TRANSPORT"
+          ],
+          "suggestSupports": [
+            "TRANSPORT_SUPPORT_TASK",
+            "MEETING_GUARDIAN"
+          ]
+        },
+        {
+          "whenAnyBarrier": [
+            "BULLYING_SAFETY"
+          ],
+          "suggestSupports": [
+            "BULLYING_PROTOCOL",
+            "GUIDANCE_REFERRAL"
+          ]
+        },
+        {
+          "whenAnyBarrier": [
+            "ENGAGEMENT_DISENGAGEMENT"
+          ],
+          "suggestSupports": [
+            "PASTORAL_CHECKIN",
+            "MEETING_GUARDIAN"
+          ]
+        }
+      ]
+    }
+  },
+  "consentModel": {
+    "enabled": true,
+    "version": "v1",
+    "messageTypes": [
+      "SERVICE_ATTENDANCE",
+      "SERVICE_ADMIN",
+      "SERVICE_SAFEGUARDING",
+      "MARKETING"
+    ],
+    "channels": {
+      "SMS": {
+        "providerOptions": [
+          "TWILIO",
+          "AZURE_COMMUNICATIONS"
+        ],
+        "defaultRule": {
+          "requireExplicitOptIn": false,
+          "respectOptOut": true
+        },
+        "notes": "Designed for service/attendance comms; schools can choose to require explicit opt-in."
+      },
+      "EMAIL": {
+        "providerOptions": [
+          "ZOHO"
+        ],
+        "defaultRule": {
+          "requireExplicitOptIn": false,
+          "respectOptOut": true
+        }
+      },
+      "WHATSAPP": {
+        "providerOptions": [
+          "TWILIO"
+        ],
+        "defaultRule": {
+          "requireExplicitOptIn": true,
+          "respectOptOut": true
+        },
+        "notes": "WhatsApp requires user opt-in before outbound messaging."
+      },
+      "VOICE_AUTODIAL": {
+        "providerOptions": [
+          "TWILIO",
+          "AZURE_COMMUNICATIONS"
+        ],
+        "defaultRule": {
+          "requireExplicitOptIn": true,
+          "respectOptOut": true
+        },
+        "notes": "Automated calls are treated as higher-risk; keep explicit opt-in default."
+      }
+    },
+    "states": [
+      "UNKNOWN",
+      "OPTED_IN",
+      "OPTED_OUT",
+      "IMPLIED"
+    ],
+    "routingRules": [
+      {
+        "name": "ServiceMessagesDefault",
+        "when": {
+          "messageTypeIn": [
+            "SERVICE_ATTENDANCE",
+            "SERVICE_ADMIN"
+          ]
+        },
+        "selectChannelOrder": [
+          "SMS",
+          "EMAIL",
+          "WHATSAPP",
+          "VOICE_AUTODIAL"
+        ],
+        "gate": {
+          "blockIfChannelOptedOut": true,
+          "blockIfExplicitOptInRequiredAndNotOptedIn": true
+        },
+        "onBlocked": {
+          "createTask": {
+            "type": "COLLECT_CONSENT",
+            "assignToRole": "ATTENDANCE_ADMIN",
+            "note": "Preferred channel blocked by consent. Use alternate permitted channel or collect opt-in."
+          },
+          "fallbackToNextPermittedChannel": true
+        },
+        "notes": "SMS/email are permitted for service attendance/admin messages unless the guardian has opted out. WhatsApp/voice require explicit opt-in. If blocked, fallback or create a consent-collection/manual task."
+      },
+      {
+        "name": "SafeguardingMessages",
+        "when": {
+          "messageTypeIn": [
+            "SERVICE_SAFEGUARDING"
+          ]
+        },
+        "selectChannelOrder": [
+          "EMAIL",
+          "SMS"
+        ],
+        "gate": {
+          "blockIfChannelOptedOut": false,
+          "blockIfExplicitOptInRequiredAndNotOptedIn": true
+        },
+        "notes": "Safeguarding alerts are internal; guardian comms for safeguarding is human-controlled and policy-driven."
+      },
+      {
+        "name": "MarketingBlockedByDefault",
+        "when": {
+          "messageTypeIn": [
+            "MARKETING"
+          ]
+        },
+        "gate": {
+          "blockUnlessExplicitOptIn": true
+        }
+      }
+    ],
+    "audit": {
+      "logFields": [
+        "guardianId",
+        "channel",
+        "stateBefore",
+        "stateAfter",
+        "source",
+        "timestampUtc"
+      ],
+      "retainWhileEnrolled": true
+    },
+    "consentCapture": {
+      "enabled": true,
+      "platformCanRecordOptOut": true,
+      "platformCanRecordOptIn": false,
+      "sources": [
+        "GUARDIAN_REPLY",
+        "STAFF_ACTION",
+        "PROVIDER_WEBHOOK"
+      ],
+      "notes": "Phase 1 decision: platform records OPTED_OUT events (and optionally IMPLIED). Explicit OPTED_IN for WhatsApp/Voice is collected via a separate opt-in flow if enabled later."
+    }
+  },
+  "tests": [
+    {
+      "name": "WhatsApp blocked when not opted in",
+      "input": {
+        "channel": "WHATSAPP",
+        "state": "UNKNOWN"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "name": "SMS allowed by default for service attendance if not opted out",
+      "input": {
+        "channel": "SMS",
+        "messageType": "SERVICE_ATTENDANCE",
+        "state": "UNKNOWN"
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "name": "Voice autodial blocked when not opted in",
+      "input": {
+        "channel": "VOICE_AUTODIAL",
+        "state": "UNKNOWN"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "name": "SMS allowed unless opted out (service attendance)",
+      "input": {
+        "channel": "SMS",
+        "messageType": "SERVICE_ATTENDANCE",
+        "state": "UNKNOWN"
+      },
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "name": "SMS blocked if opted out",
+      "input": {
+        "channel": "SMS",
+        "messageType": "SERVICE_ATTENDANCE",
+        "state": "OPTED_OUT"
+      },
+      "expected": {
+        "allowed": false
+      }
+    },
+    {
+      "name": "Platform can record opt-out event",
+      "input": {
+        "event": "OPT_OUT",
+        "channel": "SMS",
+        "source": "GUARDIAN_REPLY"
+      },
+      "expected": {
+        "recorded": true,
+        "newState": "OPTED_OUT"
+      }
+    }
+  ]
+}

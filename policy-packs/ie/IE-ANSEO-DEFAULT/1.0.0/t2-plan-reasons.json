@@ -1,0 +1,193 @@
+{
+  "policyPackId": "IE-ANSEO-DEFAULT",
+  "version": "1.0.0",
+  "scope": {
+    "type": "COUNTRY",
+    "code": "IE"
+  },
+  "effectiveFrom": "2026-01-01",
+  "attendancePlanPlaybook": {
+    "enabled": true,
+    "appliesToTier": 2,
+    "checklists": [
+      {
+        "checklistId": "T2_PLAN_DEFAULT",
+        "name": "Tier 2 Attendance Plan (Default)",
+        "items": [
+          {
+            "id": "ASSIGN_OWNER",
+            "label": "Assign case owner (named staff member)",
+            "required": true
+          },
+          {
+            "id": "CONFIRM_DATA",
+            "label": "Confirm attendance facts (AM/PM sessions) and patterns",
+            "required": true
+          },
+          {
+            "id": "BARRIER_ASSESSMENT",
+            "label": "Barrier assessment logged (select primary barriers)",
+            "required": true
+          },
+          {
+            "id": "GUARDIAN_CONTACT",
+            "label": "Guardian contacted and response recorded",
+            "required": true
+          },
+          {
+            "id": "PLAN_CREATED",
+            "label": "Attendance plan created (goals + supports + timeline)",
+            "required": true
+          },
+          {
+            "id": "MEETING_OFFERED",
+            "label": "Meeting offered/scheduled (if appropriate)",
+            "required": false
+          },
+          {
+            "id": "SUPPORTS_ASSIGNED",
+            "label": "Supports assigned (e.g., pastoral, transport, learning support)",
+            "required": true
+          },
+          {
+            "id": "REVIEW_DATE_SET",
+            "label": "Review date/time set",
+            "required": true
+          },
+          {
+            "id": "FOLLOWUP_ACTIONS",
+            "label": "Follow-up tasks created (who/what/when)",
+            "required": true
+          }
+        ]
+      }
+    ],
+    "ui": {
+      "requireChecklistCompletionToPromoteTier": true,
+      "allowPartialSave": true,
+      "showAsTimeline": true
+    }
+  },
+  "reasonTaxonomy": {
+    "enabled": true,
+    "countryDefaults": {
+      "IE": {
+        "scheme": "TUSLA_SAR_CATEGORIES",
+        "version": "A-H",
+        "codes": [
+          {
+            "code": "A",
+            "label": "Illness",
+            "type": "Authorised"
+          },
+          {
+            "code": "B",
+            "label": "Urgent family reasons",
+            "type": "Authorised"
+          },
+          {
+            "code": "C",
+            "label": "Expelled",
+            "type": "Authorised"
+          },
+          {
+            "code": "D",
+            "label": "Suspended",
+            "type": "Authorised"
+          },
+          {
+            "code": "E",
+            "label": "Other (e.g. religious observance, bereavement, emigration)",
+            "type": "Authorised"
+          },
+          {
+            "code": "F",
+            "label": "Unexplained",
+            "type": "Unauthorised/Unknown"
+          },
+          {
+            "code": "G",
+            "label": "Transfer to another school",
+            "type": "Administrative"
+          },
+          {
+            "code": "H",
+            "label": "Holiday",
+            "type": "Unauthorised/Policy"
+          }
+        ]
+      }
+    },
+    "schoolOverrides": {
+      "allowCustomCodes": true,
+      "allowRelabel": true,
+      "allowDisable": true
+    },
+    "ukMappingLayer": {
+      "enabled": true,
+      "targetScheme": "ENGLAND_ATTENDANCE_CODES_2024",
+      "notes": "Mapping layer converts Ireland categories to an England register code family for UK reporting where needed. Full code sets are maintained in a UK policy pack.",
+      "defaultMappings": [
+        {
+          "ieCode": "A",
+          "ukCodeFamily": "I",
+          "description": "Illness (authorised)"
+        },
+        {
+          "ieCode": "B",
+          "ukCodeFamily": "C",
+          "description": "Other authorised circumstances (family reasons)"
+        },
+        {
+          "ieCode": "D",
+          "ukCodeFamily": "E",
+          "description": "Excluded (authorised) - confirm exact subcode per UK pack"
+        },
+        {
+          "ieCode": "E",
+          "ukCodeFamily": "C",
+          "description": "Other authorised circumstances"
+        },
+        {
+          "ieCode": "F",
+          "ukCodeFamily": "O",
+          "description": "Unauthorised absence / other unauthorised - confirm exact per UK pack"
+        },
+        {
+          "ieCode": "H",
+          "ukCodeFamily": "G",
+          "description": "Holiday not authorised - confirm exact per UK pack"
+        }
+      ]
+    }
+  },
+  "tests": [
+    {
+      "name": "Tier 2 promotion requires attendance plan checklist completion",
+      "input": {
+        "tier": 2,
+        "checklistCompleted": false
+      },
+      "expected": {
+        "allowPromoteTier": false,
+        "blockReason": "T2_PLAN_DEFAULT incomplete"
+      }
+    },
+    {
+      "name": "Ireland reason codes include A-H",
+      "input": {},
+      "expected": {
+        "ieCodes": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H"
+        ]
+      }
+    }
+  ]
+}

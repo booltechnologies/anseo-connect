@@ -1,0 +1,313 @@
+{
+  "policyPackId": "IE-ANSEO-DEFAULT",
+  "version": "1.2.0",
+  "scope": {
+    "type": "COUNTRY",
+    "code": "IE"
+  },
+  "effectiveFrom": "2026-01-01",
+  "safeguarding": {
+    "enabled": true,
+    "alwaysHumanReview": true,
+    "restrictedCaseType": "SAFEGUARDING",
+    "quietHoursOverride": {
+      "suppressNotifications": false,
+      "channelPriorityOverride": [
+        "IN_APP",
+        "EMAIL",
+        "SMS"
+      ]
+    },
+    "recipientRouting": {
+      "roles": {
+        "primary": [
+          "DLP"
+        ],
+        "secondary": [
+          "PRINCIPAL",
+          "DEPUTY_PRINCIPAL"
+        ],
+        "optional": [
+          "YEAR_HEAD",
+          "ATTENDANCE_ADMIN"
+        ]
+      },
+      "routingRules": [
+        {
+          "name": "DefaultRouting",
+          "when": {
+            "match": "ANY"
+          },
+          "notify": {
+            "primary": true,
+            "secondaryOnNoAck": true
+          },
+          "ackSlaMinutes": 60
+        }
+      ]
+    },
+    "patternTriggers": [
+      {
+        "id": "PROLONGED_NON_CONTACT",
+        "description": "Repeated absence + repeated failed contact within window",
+        "whenAll": [
+          {
+            "metric": "guardianNoReplyDays",
+            "op": ">=",
+            "value": 3
+          },
+          {
+            "metric": "contactAttempts",
+            "op": ">=",
+            "value": 3
+          },
+          {
+            "metric": "absentSessionsLast5Days",
+            "op": ">=",
+            "value": 3
+          }
+        ],
+        "action": {
+          "type": "CREATE_ALERT",
+          "severity": "HIGH"
+        }
+      },
+      {
+        "id": "SUDDEN_DETERIORATION",
+        "description": "Sharp week-over-week deterioration",
+        "whenAll": [
+          {
+            "metric": "attendanceDeltaWoW",
+            "op": "<=",
+            "value": -0.5
+          }
+        ],
+        "action": {
+          "type": "CREATE_ALERT",
+          "severity": "MEDIUM"
+        }
+      },
+      {
+        "id": "CONSECUTIVE_ABSENCES",
+        "description": "Consecutive AM/PM session absences",
+        "whenAll": [
+          {
+            "metric": "consecutiveAbsentSessions",
+            "op": ">=",
+            "value": 4
+          }
+        ],
+        "action": {
+          "type": "CREATE_ALERT",
+          "severity": "MEDIUM"
+        }
+      },
+      {
+        "id": "HIGH_RISK_COMBINATION",
+        "description": "Consecutive absences + prior Tier 3 + non-contact",
+        "whenAll": [
+          {
+            "metric": "consecutiveAbsentSessions",
+            "op": ">=",
+            "value": 3
+          },
+          {
+            "metric": "priorTier3Case",
+            "op": "==",
+            "value": true
+          },
+          {
+            "metric": "guardianNoReplyDays",
+            "op": ">=",
+            "value": 2
+          }
+        ],
+        "action": {
+          "type": "CREATE_ALERT",
+          "severity": "HIGH"
+        }
+      }
+    ],
+    "keywordTriggers": {
+      "mode": "PHRASE_MATCH",
+      "caseInsensitive": true,
+      "phrases": {
+        "IMMEDIATE_HARM_ABUSE": [
+          "abuse",
+          "beating",
+          "hurt me",
+          "unsafe",
+          "violence",
+          "threat",
+          "rape"
+        ],
+        "NEGLECT_GUARDIANSHIP": [
+          "left alone",
+          "no food",
+          "homeless",
+          "kicked out"
+        ],
+        "SELF_HARM": [
+          "self harm",
+          "cutting",
+          "suicide",
+          "kill myself"
+        ],
+        "COERCION_EXPLOITATION": [
+          "forced",
+          "trafficking",
+          "grooming"
+        ]
+      },
+      "action": {
+        "type": "CREATE_ALERT",
+        "severity": "HIGH"
+      },
+      "notes": "Avoid broad single-word matches that generate noise; schools can extend/trim phrases."
+    },
+    "aiConstraints": {
+      "allowSummarisation": true,
+      "allowDraftingGuardianMessages": false,
+      "allowExternalReferral": false,
+      "notes": "AI can summarise timeline and highlight matched rules only; all actions require human review."
+    },
+    "audit": {
+      "requiredFields": [
+        "triggerType",
+        "matchedRuleIds",
+        "evidenceLinks",
+        "createdBy",
+        "createdAtUtc"
+      ],
+      "immutable": true
+    },
+    "playbook": {
+      "enabled": true,
+      "checklists": [
+        {
+          "checklistId": "SBK_DEFAULT_HIGH",
+          "name": "Safeguarding Alert \u2014 High Severity (Default)",
+          "severity": "HIGH",
+          "items": [
+            {
+              "id": "ACK_ALERT",
+              "label": "Acknowledge alert and assign owner",
+              "required": true
+            },
+            {
+              "id": "REVIEW_EVIDENCE",
+              "label": "Review evidence (attendance pattern + message snippet)",
+              "required": true
+            },
+            {
+              "id": "ATTEMPT_CONTACT_GUARDIAN",
+              "label": "Attempt guardian contact (phone or agreed channel)",
+              "required": true
+            },
+            {
+              "id": "CONSULT_PASTORAL_TEAM",
+              "label": "Consult pastoral lead/year head (if applicable)",
+              "required": false
+            },
+            {
+              "id": "RECORD_ACTIONS",
+              "label": "Record actions taken and outcome notes",
+              "required": true
+            },
+            {
+              "id": "SET_FOLLOWUP",
+              "label": "Set follow-up date/time and next steps",
+              "required": true
+            },
+            {
+              "id": "CLOSE_OR_ESCALATE",
+              "label": "Close alert or escalate internally per school policy",
+              "required": true
+            }
+          ]
+        },
+        {
+          "checklistId": "SBK_DEFAULT_MEDIUM",
+          "name": "Safeguarding Alert \u2014 Medium Severity (Default)",
+          "severity": "MEDIUM",
+          "items": [
+            {
+              "id": "ACK_ALERT",
+              "label": "Acknowledge alert and assign owner",
+              "required": true
+            },
+            {
+              "id": "REVIEW_EVIDENCE",
+              "label": "Review evidence (attendance pattern + message snippet)",
+              "required": true
+            },
+            {
+              "id": "ATTEMPT_CONTACT_GUARDIAN",
+              "label": "Attempt guardian contact",
+              "required": true
+            },
+            {
+              "id": "RECORD_ACTIONS",
+              "label": "Record actions taken and outcome notes",
+              "required": true
+            },
+            {
+              "id": "SET_FOLLOWUP",
+              "label": "Set follow-up date/time and next steps",
+              "required": true
+            },
+            {
+              "id": "CLOSE_OR_ESCALATE",
+              "label": "Close alert or escalate internally per school policy",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "ui": {
+        "requireChecklistCompletionToClose": true,
+        "allowPartialSave": true,
+        "showAsTimeline": true
+      }
+    }
+  },
+  "tests": [
+    {
+      "name": "Prolonged non-contact triggers safeguarding alert",
+      "input": {
+        "guardianNoReplyDays": 3,
+        "contactAttempts": 3,
+        "absentSessionsLast5Days": 3
+      },
+      "expected": {
+        "createAlert": true,
+        "severity": "HIGH",
+        "caseType": "SAFEGUARDING"
+      }
+    },
+    {
+      "name": "No escalation when criteria not met",
+      "input": {
+        "guardianNoReplyDays": 1,
+        "contactAttempts": 1,
+        "absentSessionsLast5Days": 1
+      },
+      "expected": {
+        "createAlert": false
+      }
+    },
+    {
+      "name": "Safeguarding alert includes default checklist mapping",
+      "input": {
+        "guardianNoReplyDays": 3,
+        "contactAttempts": 3,
+        "absentSessionsLast5Days": 3
+      },
+      "expected": {
+        "createAlert": true,
+        "severity": "HIGH",
+        "checklistId": "SBK_DEFAULT_HIGH"
+      }
+    }
+  ]
+}
