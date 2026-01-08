@@ -9,7 +9,7 @@ Schools will choose providers. We need a consistent interface and audit.
 ## Decision
 Implement Comms service with provider adapters:
 - ISmsProvider (Twilio, ACS)
-- IEmailProvider (Zoho)
+- IEmailProvider (Sendgrid)
 - optional IWhatsAppProvider/IVoiceProvider
 All sends go through:
 - consent gate
