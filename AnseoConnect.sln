@@ -1,0 +1,100 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBMigrator", "tools\DBMigrator\DBMigrator.csproj", "{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolicyPackTool", "tools\PolicyPackTool\PolicyPackTool.csproj", "{16DC978A-4B54-D32D-0329-B9D08877502C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{984BB9B3-3FA3-BE33-9484-CAC21695A33C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.ApiGateway", "src\Services\AnseoConnect.ApiGateway\AnseoConnect.ApiGateway.csproj", "{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Comms", "src\Services\AnseoConnect.Comms\AnseoConnect.Comms.csproj", "{136C5E4A-55C0-E5D7-4A87-3443C1B3703E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Ingestion.Wonde", "src\Services\AnseoConnect.Ingestion.Wonde\AnseoConnect.Ingestion.Wonde.csproj", "{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Workflow", "src\Services\AnseoConnect.Workflow\AnseoConnect.Workflow.csproj", "{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{C8E42992-5E42-0C2B-DBFE-AA848D06431C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Contracts", "src\Shared\AnseoConnect.Contracts\AnseoConnect.Contracts.csproj", "{DF8793F3-0806-B37B-95A1-87892865300F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Data", "src\Shared\AnseoConnect.Data\AnseoConnect.Data.csproj", "{5AC4C510-F14E-7812-5494-29CB1F484990}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.PolicyRuntime", "src\Shared\AnseoConnect.PolicyRuntime\AnseoConnect.PolicyRuntime.csproj", "{4C91A85C-56D5-A505-B7A0-AF708CE4745A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Shared", "src\Shared\AnseoConnect.Shared\AnseoConnect.Shared.csproj", "{F75A420E-770B-0720-48BD-9D0BFBFAA528}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16DC978A-4B54-D32D-0329-B9D08877502C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16DC978A-4B54-D32D-0329-B9D08877502C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16DC978A-4B54-D32D-0329-B9D08877502C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16DC978A-4B54-D32D-0329-B9D08877502C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{136C5E4A-55C0-E5D7-4A87-3443C1B3703E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{136C5E4A-55C0-E5D7-4A87-3443C1B3703E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{136C5E4A-55C0-E5D7-4A87-3443C1B3703E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{136C5E4A-55C0-E5D7-4A87-3443C1B3703E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF8793F3-0806-B37B-95A1-87892865300F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF8793F3-0806-B37B-95A1-87892865300F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF8793F3-0806-B37B-95A1-87892865300F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF8793F3-0806-B37B-95A1-87892865300F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AC4C510-F14E-7812-5494-29CB1F484990}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AC4C510-F14E-7812-5494-29CB1F484990}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AC4C510-F14E-7812-5494-29CB1F484990}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AC4C510-F14E-7812-5494-29CB1F484990}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C91A85C-56D5-A505-B7A0-AF708CE4745A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C91A85C-56D5-A505-B7A0-AF708CE4745A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C91A85C-56D5-A505-B7A0-AF708CE4745A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C91A85C-56D5-A505-B7A0-AF708CE4745A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F75A420E-770B-0720-48BD-9D0BFBFAA528}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F75A420E-770B-0720-48BD-9D0BFBFAA528}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F75A420E-770B-0720-48BD-9D0BFBFAA528}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F75A420E-770B-0720-48BD-9D0BFBFAA528}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{16DC978A-4B54-D32D-0329-B9D08877502C} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{984BB9B3-3FA3-BE33-9484-CAC21695A33C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{FACB2338-8C5F-0C50-DD58-0ECACAC3FEDE} = {984BB9B3-3FA3-BE33-9484-CAC21695A33C}
+		{136C5E4A-55C0-E5D7-4A87-3443C1B3703E} = {984BB9B3-3FA3-BE33-9484-CAC21695A33C}
+		{141AADCE-60CE-6CD8-1EC8-B22BA0B487B7} = {984BB9B3-3FA3-BE33-9484-CAC21695A33C}
+		{C2ABFAE7-3658-B9BB-AD8B-E32B1BA0398C} = {984BB9B3-3FA3-BE33-9484-CAC21695A33C}
+		{C8E42992-5E42-0C2B-DBFE-AA848D06431C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{DF8793F3-0806-B37B-95A1-87892865300F} = {C8E42992-5E42-0C2B-DBFE-AA848D06431C}
+		{5AC4C510-F14E-7812-5494-29CB1F484990} = {C8E42992-5E42-0C2B-DBFE-AA848D06431C}
+		{4C91A85C-56D5-A505-B7A0-AF708CE4745A} = {C8E42992-5E42-0C2B-DBFE-AA848D06431C}
+		{F75A420E-770B-0720-48BD-9D0BFBFAA528} = {C8E42992-5E42-0C2B-DBFE-AA848D06431C}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A9C0889-7034-4797-BDE8-FB9BBA448803}
+	EndGlobalSection
+EndGlobal

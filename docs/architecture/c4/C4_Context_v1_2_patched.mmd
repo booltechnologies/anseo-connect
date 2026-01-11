@@ -1,0 +1,11 @@
+%% Generated from Structurizr DSL: Structurizr_C4_v1_2.dsl
+%% Mermaid C4
+
+C4Context
+title "Attendance Improvement SaaS (Ireland-first) — C4 Context"
+Person(staff, "School Staff", "Attendance admin, year heads, principals, DLP.")
+Person(guardian, "Guardian", "Parent/guardian receiving messages and replying.")
+Person(etb, "ETB/Trust/Gov User", "Aggregated reporting and benchmarking users.")
+System_Ext(sis, "School Information System (SIS)", "VSware, Tyro, Compass, Aladdin.")
+System_Ext(wonde, "Wonde", "SIS data extraction layer.")
+Rel(sis, wonde, "Exposes SIS data via connectors")

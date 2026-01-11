@@ -1,0 +1,18 @@
+%% Generated from Structurizr DSL: Structurizr_C4_v1_2.dsl
+%% Mermaid C4
+
+C4Component
+title "Attendance Improvement SaaS — Workflow Service Components"
+Person(staff, "School Staff", "Attendance admin, year heads, principals, DLP.")
+System_Ext(msg, "Messaging Providers", "Twilio / Zoho / Azure Communication Services")
+Container_Boundary(workflow_boundary, "Case & Workflow Service") {
+  Container(workflow, "Case & Workflow Service", "Container Apps", "Tiering, tasks, checklists, evidence packs, audit.")
+  Component(audit, "Audit Logger", "Component", "Immutable audit event writer.")
+  Component(tier, "Tier Engine", "Component", "Policy-pack driven tier assignment and escalation.")
+  Component(evidence, "Evidence Pack Builder", "Component", "Referral-ready case evidence compilation.")
+  Component(safeguarding, "Safeguarding Rules Engine", "Component", "Deterministic rule evaluation; creates restricted safeguarding alert cases; starts SLA timers.")
+  Component(playbook, "Safeguarding Playbook Manager", "Component", "Assigns severity-based checklists; enforces required items to close; records actions and outcomes.")
+}
+Rel(workflow, db, "Stores cases, tasks, comms, audit")
+Rel(workflow, comms, "Requests sends and follow-ups")
+Rel(workflow, aiassist, "Requests drafts/summaries/classification")

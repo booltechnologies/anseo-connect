@@ -8,6 +8,18 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- Microsoft.Identity.Web will be added later when Entra authentication is configured -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\AnseoConnect.Data\AnseoConnect.Data.csproj" />
+    <ProjectReference Include="..\..\Shared\AnseoConnect.Contracts\AnseoConnect.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\AnseoConnect.Shared\AnseoConnect.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,40 @@
+%% Generated from Structurizr DSL: Structurizr_C4_v1_2.dsl
+%% Mermaid C4
+
+C4Container
+title "Attendance Improvement SaaS (Ireland-first) — C4 Containers"
+Person(staff, "School Staff", "Attendance admin, year heads, principals, DLP.")
+Person(guardian, "Guardian", "Parent/guardian receiving messages and replying.")
+Person(etb, "ETB/Trust/Gov User", "Aggregated reporting and benchmarking users.")
+System_Ext(sis, "School Information System (SIS)", "VSware, Tyro, Compass, Aladdin.")
+System_Ext(wonde, "Wonde", "SIS data extraction layer.")
+Container_Boundary(saas_boundary, "Attendance Improvement SaaS") {
+  Container(web, "Web Portals", "TypeScript/React", "Staff/admin portals (and optional guardian web views).")
+  Container(api, "Public API", "REST", "API gateway and application API surface.")
+  Container(auth, "Identity", "Azure AD B2C", "Authentication and user management.")
+  Container(ingestion, "Ingestion Service", "Azure Functions", "Pulls data via Wonde, validates, emits events.")
+  Container(attendance, "Attendance Service", "Container Apps / Functions", "Reconciliation, scoring inputs, daily lists.")
+  Container(workflow, "Case & Workflow Service", "Container Apps", "Tiering, tasks, checklists, evidence packs, audit.")
+  Container(comms, "Comms Orchestrator", "Container Apps", "Provider abstraction for SMS/Email/WhatsApp/Voice.")
+  Container(aiassist, "AI Assist Service", "Azure OpenAI + tool-calling", "Drafting/summarisation/classification with guardrails.")
+  Container(db, "Operational Database", "Azure SQL", "Multi-tenant operational store (tenant_id isolation + RBAC).")
+  Container(bus, "Event Bus", "Azure Service Bus/Event Grid", "Event-driven backbone.")
+  Container(lake, "Analytics Lakehouse", "ADLS + Fabric/Synapse (optional)", "Historical analytics and modelling datasets.")
+  Container(bi, "Reporting", "Power BI Embedded", "Dashboards for school and ETB/trust views.")
+}
+Rel(sis, wonde, "Exposes SIS data via connectors")
+Rel(wonde, ingestion, "Provides attendance + contacts via API/sync")
+Rel(web, api, "Calls")
+Rel(api, auth, "Authenticates")
+Rel(api, attendance, "Reads daily lists, trends")
+Rel(api, workflow, "Creates/updates cases and tasks")
+Rel(ingestion, bus, "Publishes attendance events")
+Rel(bus, attendance, "Delivers events")
+Rel(attendance, db, "Stores marks, lists, scores (operational)")
+Rel(workflow, db, "Stores cases, tasks, comms, audit")
+Rel(workflow, comms, "Requests sends and follow-ups")
+Rel(comms, workflow, "Returns delivery status")
+Rel(workflow, aiassist, "Requests drafts/summaries/classification")
+Rel(attendance, lake, "Writes analytics datasets")
+Rel(lake, bi, "Feeds dashboards")
+Rel(workflow, bi, "Feeds operational metrics views")

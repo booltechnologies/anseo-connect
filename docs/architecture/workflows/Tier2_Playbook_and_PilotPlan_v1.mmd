@@ -1,0 +1,30 @@
+
+flowchart TB
+  S0((Tier 2 threshold met))
+  S1[Create/Update Tier 2 case]
+  S2[Attach checklist: T2_PLAN_DEFAULT]
+  S3[Assign owner]
+  S4[Confirm data + patterns (AM/PM)]
+  S5[Barrier assessment]
+  S6[Guardian contact + response logged]
+  S7[Create attendance plan (goals + supports)]
+  S8[Create follow-up tasks + set review date]
+  S9{Required items complete?}
+  S10[Allow Tier 2 plan marked "Active"]
+  S11((End))
+  S12[Block promotion / show missing items]
+
+  S0 --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9
+  S9 -- Yes --> S10 --> S11
+  S9 -- No --> S12 --> S9
+
+%% ===============================
+%% Pilot rollout timeline (high level)
+%% ===============================
+timeline
+  title Ireland MVP Pilot Rollout (suggested)
+  2026-02 : Pilot design + DPIA + policy pack defaults
+  2026-03 : Onboard 3-5 post-primary schools (existing customers)
+  2026-04 : Run live pilot (daily action + tier2 plans + comms)
+  2026-05 : Evaluate KPIs + iterate (thresholds, templates, UX)
+  2026-06 : Expand to 10-20 schools + ETB dashboard pilot

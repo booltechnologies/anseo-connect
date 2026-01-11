@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Shared\AnseoConnect.PolicyRuntime\AnseoConnect.PolicyRuntime.csproj" />
   </ItemGroup>
 

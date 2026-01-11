@@ -1,0 +1,62 @@
+---
+description: Project rules for AnseoConnect (.NET 10, ASP.NET Core API, Blazor Web App + .NET MAUI Blazor Hybrid, DevExpress UI/Reporting/Dashboard)
+globs:
+  - "**/*.sln"
+  - "**/*.csproj"
+  - "**/*.cs"
+  - "**/*.razor"
+  - "**/*.razor.cs"
+  - "**/*.json"
+  - "**/*.sql"
+alwaysApply: true
+---
+
+# Non-negotiables
+- Use **DevExpress** components for UI. Do **not** introduce MudBlazor/Syncfusion/Telerik/etc unless explicitly asked.
+- Prefer **one app shell** per host (Web and Mobile) and keep reusable UI inside a **Razor Class Library (RCL)**.
+- Do not leak EF Core entities to UI. API boundary uses DTOs.
+
+# Solution structure (target)
+- `App.Domain` — entities/value objects, pure domain rules (no EF attributes if avoidable)
+- `App.Application` — use-cases/services, validation, orchestration
+- `App.Infrastructure` — EF Core DbContext, repositories, external integrations
+- `App.Api` — ASP.NET Core API (auth, controllers/minimal APIs, reporting/dashboard endpoints)
+- `App.UI.Shared` — RCL: reusable Razor components/pages/layout fragments (DevExpress UI)
+- `App.Web` — Blazor Web App host (DevExpress theme/resources, routing host)
+- `App.Mobile` — .NET MAUI Blazor Hybrid host (platform services, theme/resources)
+- `App.Contracts` — shared DTOs/request/response models
+- `App.Client` — typed API client + auth token handling (shared by Web+Mobile)
+- `App.Reports` — XtraReport definitions & shared report helpers
+
+# API & backend rules
+- All endpoints are async and accept `CancellationToken`.
+- Return consistent errors using `ProblemDetails` (don’t throw raw exceptions to clients).
+- Validate input at the boundary (DTO validation) and re-check authorization inside handlers.
+- Multi-tenant safety (if applicable): every query is tenant-scoped; never trust client-provided IDs without verifying tenant ownership.
+
+# EF Core + SQL Server rules
+- Use migrations for schema changes; never “just change the DB”.
+- Reads: default to `AsNoTracking()` and projection (`Select`) for read models.
+- Avoid N+1 queries; prefer explicit includes only when needed.
+- Add/adjust indexes when a query pattern is introduced.
+
+# Blazor / UI rules
+- Keep pages thin: UI events call services; services call `App.Client`.
+- Put reusable components in `App.UI.Shared` (RCL). Host projects only contain:
+  - bootstrap, DI wiring, theme/resources, platform-specific services.
+- Prefer DevExpress patterns (forms/grid/editors). Use consistent page layouts.
+
+# DevExpress Reporting rules
+- Reports live in `App.Reports` (class library).
+- The Web/Mobile viewers consume reports via API endpoints and parameters.
+- Do not attempt to use the VS report designer inside MAUI Hybrid (treat design as separate from runtime usage).
+- For large reports: stream output (PDF/Excel), avoid returning huge JSON payloads.
+
+# DevExpress Dashboard rules
+- Dashboards are **web-first**: host the dashboard UI in the Web app and serve data via the API/dashboard controller.
+- Mobile: if needed, navigate to the dashboard route inside the hybrid app (don’t rebuild dashboards as “native pages” unless explicitly required).
+
+# Change hygiene (how to work)
+- Prefer small, reviewable changes: 1–3 files per edit when possible.
+- When modifying code: keep it compiling, include required `using`s, respect Nullable.
+- When unsure, search existing patterns in the repo before inventing new ones.

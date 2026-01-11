@@ -1,0 +1,218 @@
+%% Workflows_and_C4_v1.mmd
+%% Mermaid diagrams for workflows (BPMN-style) and C4 views.
+%% Paste into any Mermaid renderer.
+
+%% ===============================
+%% W1: Daily Attendance + Same-Day Action (AM/PM)
+%% ===============================
+flowchart LR
+  %% Lanes
+  subgraph L1[RFID / SIS / Wonde]
+    A0((Cut-off reached))
+    A1[Wonde sync: AM/PM marks + guardians]
+  end
+
+  subgraph L2[Ingestion & Validation]
+    B1[Validate + reconcile marks]
+    B2{Any unconfirmed absences?}
+  end
+
+  subgraph L3[Case & Workflow Engine]
+    C1[Create/Update Case (Tier 0)]
+    C2[Assign priority + next action]
+    C3{School autonomy for DAILY_ABSENCE?}
+  end
+
+  subgraph L4[Comms Orchestrator]
+    D1[Send message (SMS/Email/WhatsApp/Voice)]
+    D2[Track delivery + fallback]
+    D3((Timer: no reply))
+  end
+
+  subgraph L5[Guardian]
+    E1((Reply received))
+  end
+
+  subgraph L6[AI Assist (optional)]
+    F1[Draft message within template]
+    F2[Classify reply into reason code]
+    F3[Summarise case for staff]
+  end
+
+  subgraph L7[Staff]
+    G1[Review/approve (if required)]
+    G2[Follow-up task (call/meeting)]
+  end
+
+  A0 --> A1 --> B1 --> B2
+  B2 -- No --> Z1((End))
+  B2 -- Yes --> C1 --> C2 --> C3
+  C3 -- A0 Advisory --> F1 --> G1 --> D1
+  C3 -- A1 Auto-message --> F1 --> D1
+  C3 -- A2 Auto + tasks --> F1 --> D1 --> G2
+  D1 --> D2 --> E1
+  E1 --> F2 --> C1
+  D2 --> D3 --> D1
+  F3 --> G1
+
+%% ===============================
+%% W2: Tiered Escalation (Anseo-style 3 tiers)
+%% ===============================
+flowchart TB
+  S0((Weekly scoring or threshold crossed))
+  S1[Compute rolling indicators]
+  S2{Tier change required?}
+  S3[Promote/De-escalate case tier]
+  S4[Attach required actions + review window]
+  S5[Create tasks + draft comms]
+  S6[Staff review/approve (policy)]
+  S7[Execute interventions + log evidence]
+  S8{Improvement within review window?}
+  S9[Close/de-escalate case + outcome]
+  S10[Assemble evidence pack (Tier 3)]
+  S11[Human submit referral / intensive supports]
+  S12((End))
+
+  S0 --> S1 --> S2
+  S2 -- No --> S12
+  S2 -- Yes --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+  S8 -- Yes --> S9 --> S12
+  S8 -- No --> S10 --> S11 --> S12
+
+%% ===============================
+%% W3: Two-way Comms Loop
+%% ===============================
+sequenceDiagram
+  participant Case as Case Engine
+  participant Comms as Comms Orchestrator
+  participant AI as AI Assist
+  participant G as Guardian
+  participant Staff as Staff
+
+  Case->>Comms: Trigger message (template + variables)
+  Comms->>G: Send SMS/Email/WhatsApp/Voice
+  Comms-->>Case: Delivery status
+  alt Guardian replies
+    G->>Comms: Reply message
+    Comms->>AI: Classify reason + extract intent
+    AI-->>Case: Structured reason + confidence
+    Case->>Staff: Notify if follow-up needed
+  else No reply within timer
+    Case->>Comms: Follow-up (fallback channel)
+    Comms->>G: Send follow-up
+  end
+
+%% ===============================
+%% W4: Safeguarding Escalation (Human-first; restricted case; routing; SLA; playbook checklist)
+%% ===============================
+flowchart LR
+  subgraph TRIG[Triggers]
+    X0((Trigger: reply/pattern))
+    X0a[Pattern rules matched]
+    X0b[Keyword/phrase matched]
+  end
+
+  subgraph RULES[Safeguarding Rules Engine (deterministic)]
+    X1[Evaluate ruleset + thresholds]
+    X2{Escalation criteria met?}
+  end
+
+  subgraph CASE[Restricted Safeguarding Case]
+    X3[Create restricted alert record
+case_type=SAFEGUARDING]
+    X3a[Apply restricted RBAC scope
+(DLP/principal/year head)]
+    X3b[Attach default playbook checklist
+(severity-based)]
+    X3c[Write immutable audit event
+(trigger + matched rule + evidence links)]
+  end
+
+  subgraph ROUTE[Recipient Routing + Notifications]
+    X4[Resolve recipients from Policy Pack]
+    X4a[Notify in-app + email
+(optional SMS)]
+    X4b((Acknowledge SLA timer))
+    X4c{Acknowledged in time?}
+    X4d[Escalate notification to secondary recipients]
+  end
+
+  subgraph HUMAN[Human Review + Playbook]
+    X5[Human reviews evidence]
+    X6[Complete playbook checklist items
+(required items enforced)]
+    X6a[Record actions + outcome notes]
+    X6b[Set follow-up date/time]
+    X7((Close/Update alert))
+  end
+
+  subgraph RETURN[Return]
+    X8((Return to normal case flow))
+  end
+
+  X0 --> X1
+  X0a --> X1
+  X0b --> X1
+  X1 --> X2
+  X2 -- No --> X8
+  X2 -- Yes --> X3 --> X3a --> X3b --> X3c --> X4 --> X4a --> X4b --> X4c
+  X4c -- Yes --> X5 --> X6 --> X6a --> X6b --> X7
+  X4c -- No --> X4d --> X5 --> X6 --> X6a --> X6b --> X7
+
+%% Notes:
+%% - Quiet hours do NOT suppress safeguarding notifications; they may change channel priority only.
+%% - AI may summarise and highlight matched rules but cannot decide outcomes or trigger external referrals.
+%% - Closing an alert requires completion of required checklist items (configurable).
+
+
+
+%% ===============================
+%% C4: Context (C1)
+%% ===============================
+flowchart LR
+  Staff[Staff Users]
+  Guardians[Guardians]
+  ETB[ETB/Trust/Gov Users]
+  Wonde[Wonde]
+  SIS[SIS]
+  SaaS[Attendance Improvement SaaS]
+
+  Staff --> SaaS
+  Guardians <--> SaaS
+  ETB --> SaaS
+  SIS --> Wonde --> SaaS
+
+%% ===============================
+%% C4: Container (C2)
+%% ===============================
+flowchart TB
+  subgraph Users
+    U1[Staff Portal]
+    U2[Admin Portal]
+  end
+
+  subgraph SaaSPlatform[Attendance Improvement SaaS]
+    APIGW[API Gateway]
+    AUTH[Auth: Azure AD B2C]
+    ING[Ingestion Service]
+    ATT[Attendance Service]
+    CASE[Case/Workflow Service]
+    COMMS[Comms Orchestrator]
+    AI[AI Assist Service]
+    DB[(Operational DB: Azure SQL)]
+    BUS[(Service Bus/Event Grid)]
+    LAKE[(Analytics Lakehouse)]
+    BI[Power BI Embedded]
+  end
+
+  U1 --> APIGW
+  U2 --> APIGW
+  APIGW --> AUTH
+  APIGW --> ATT
+  APIGW --> CASE
+  ING --> BUS --> ATT
+  ATT --> DB
+  CASE --> DB
+  CASE --> COMMS
+  CASE --> AI
+  ATT --> LAKE --> BI
