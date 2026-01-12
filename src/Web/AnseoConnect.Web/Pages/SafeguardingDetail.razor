@@ -1,0 +1,83 @@
+@page "/safeguarding/{AlertId:guid}"
+@attribute [Authorize]
+@inject SafeguardingClient SafeguardingClient
+
+<PageTitle>Safeguarding detail</PageTitle>
+
+@if (Alert is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="case-header">
+        <div>
+            <h2>@Alert.StudentName</h2>
+            <p>Severity: @Alert.Severity · Trigger: @Alert.TriggerSummary</p>
+            <p>Created: @Alert.CreatedAtUtc.ToLocalTime()</p>
+        </div>
+        <div class="case-actions">
+            <DxButton Text="Acknowledge" Click="Acknowledge" />
+            <DxButton Text="Assign" Click="AssignToLead" />
+        </div>
+    </div>
+
+    <DxTabs>
+        <DxTabPage Text="Overview">
+            <div class="card note">
+                <p>Always-human review required. Add safeguarding policy notes here.</p>
+            </div>
+        </DxTabPage>
+        <DxTabPage Text="Checklist">
+            <Checklist Items="ChecklistItems" />
+        </DxTabPage>
+        <DxTabPage Text="Timeline">
+            <Timeline CaseEvents="TimelineItems" />
+        </DxTabPage>
+    </DxTabs>
+}
+
+@code {
+    [Parameter] public Guid AlertId { get; set; }
+
+    private SafeguardingAlertSummary? Alert { get; set; }
+    private IReadOnlyList<ChecklistItemDto> ChecklistItems { get; set; } = Array.Empty<ChecklistItemDto>();
+    private IReadOnlyList<CaseTimelineEventDto> TimelineItems { get; set; } = Array.Empty<CaseTimelineEventDto>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var alerts = await SafeguardingClient.GetQueueAsync();
+        Alert = alerts.FirstOrDefault(a => a.AlertId == AlertId) ?? alerts.FirstOrDefault();
+        ChecklistItems = new[]
+        {
+            new ChecklistItemDto("ack", "Acknowledge alert", true, Alert?.AcknowledgedBy is null ? "Pending" : "Done"),
+            new ChecklistItemDto("assign", "Assign safeguarding lead", true, "Pending")
+        };
+        TimelineItems = new[]
+        {
+            new CaseTimelineEventDto(Guid.NewGuid(), Guid.Empty, "AlertCreated", Alert?.TriggerSummary, Alert?.CreatedAtUtc ?? DateTimeOffset.UtcNow, "system")
+        };
+    }
+
+    private async Task Acknowledge()
+    {
+        if (Alert != null)
+        {
+            Alert = await SafeguardingClient.AcknowledgeAsync(Alert.AlertId) ?? Alert;
+            ChecklistItems = ChecklistItems.Select(i => i.Id == "ack" ? i with { Status = "Done" } : i).ToList();
+        }
+    }
+
+    private async Task AssignToLead()
+    {
+        if (Alert == null)
+        {
+            return;
+        }
+
+        // Stub: add timeline entry; if API exists, hook here
+        var assignEvent = new CaseTimelineEventDto(Guid.NewGuid(), Guid.Empty, "Assigned", "Assigned to safeguarding.lead", DateTimeOffset.UtcNow, "you");
+        TimelineItems = TimelineItems.Concat(new[] { assignEvent }).ToList();
+        ChecklistItems = ChecklistItems.Select(i => i.Id == "assign" ? i with { Status = "Done", Notes = "safeguarding.lead" } : i).ToList();
+    }
+}

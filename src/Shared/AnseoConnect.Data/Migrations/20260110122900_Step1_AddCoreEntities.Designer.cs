@@ -12,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AnseoConnect.Data.Migrations
 {
     [DbContext(typeof(AnseoConnectDbContext))]
-    partial class AnseoConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260110122900_Step1_AddCoreEntities")]
+    partial class Step1_AddCoreEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -163,139 +165,6 @@ namespace AnseoConnect.Data.Migrations
                     b.ToTable("AttendanceMarks");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Case", b =>
-                {
-                    b.Property<Guid>("CaseId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CaseType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ResolutionNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ResolvedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Tier")
-                        .HasColumnType("int");
-
-                    b.HasKey("CaseId");
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("TenantId", "SchoolId", "CaseType", "Status")
-                        .HasDatabaseName("IX_Cases_Tenant_School_Type_Status");
-
-                    b.HasIndex("TenantId", "SchoolId", "StudentId", "Status")
-                        .HasDatabaseName("IX_Cases_Tenant_School_Student_Status");
-
-                    b.ToTable("Cases");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.CaseTimelineEvent", b =>
-                {
-                    b.Property<Guid>("EventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CaseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventData")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("EventId");
-
-                    b.HasIndex("CaseId");
-
-                    b.HasIndex("TenantId", "SchoolId", "CaseId", "CreatedAtUtc")
-                        .HasDatabaseName("IX_CaseTimelineEvents_Tenant_School_Case_Created");
-
-                    b.ToTable("CaseTimelineEvents");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.ConsentState", b =>
-                {
-                    b.Property<Guid>("ConsentStateId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<Guid>("GuardianId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("LastUpdatedUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ConsentStateId");
-
-                    b.HasIndex("GuardianId");
-
-                    b.HasIndex("TenantId", "SchoolId", "GuardianId", "Channel")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ConsentStates_Tenant_School_Guardian_Channel");
-
-                    b.ToTable("ConsentStates");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.Guardian", b =>
                 {
                     b.Property<Guid>("GuardianId")
@@ -338,127 +207,6 @@ namespace AnseoConnect.Data.Migrations
                     b.ToTable("Guardians");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Message", b =>
-                {
-                    b.Property<Guid>("MessageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CaseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("DeliveredAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ErrorCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("GuardianId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("MessageType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Provider")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProviderMessageId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("SentAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("TemplateId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("MessageId");
-
-                    b.HasIndex("GuardianId");
-
-                    b.HasIndex("TenantId", "SchoolId", "CaseId", "CreatedAtUtc")
-                        .HasDatabaseName("IX_Messages_Tenant_School_Case_Created");
-
-                    b.HasIndex("TenantId", "SchoolId", "GuardianId", "CreatedAtUtc")
-                        .HasDatabaseName("IX_Messages_Tenant_School_Guardian_Created");
-
-                    b.ToTable("Messages");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.SafeguardingAlert", b =>
-                {
-                    b.Property<Guid>("AlertId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CaseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ChecklistId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("RequiresHumanReview")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ReviewNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset?>("ReviewedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ReviewedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("AlertId");
-
-                    b.HasIndex("CaseId");
-
-                    b.HasIndex("TenantId", "SchoolId", "CaseId", "RequiresHumanReview")
-                        .HasDatabaseName("IX_SafeguardingAlerts_Tenant_School_Case_Review");
-
-                    b.ToTable("SafeguardingAlerts");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.School", b =>
                 {
                     b.Property<Guid>("SchoolId")
@@ -466,9 +214,6 @@ namespace AnseoConnect.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("LastSyncUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Name")
@@ -484,9 +229,6 @@ namespace AnseoConnect.Data.Migrations
 
                     b.Property<string>("Timezone")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WondeDomain")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("WondeSchoolId")
@@ -741,39 +483,6 @@ namespace AnseoConnect.Data.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Case", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Student", "Student")
-                        .WithMany("Cases")
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.CaseTimelineEvent", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Case", "Case")
-                        .WithMany("TimelineEvents")
-                        .HasForeignKey("CaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Case");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.ConsentState", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Guardian", "Guardian")
-                        .WithMany("ConsentStates")
-                        .HasForeignKey("GuardianId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guardian");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.Guardian", b =>
                 {
                     b.HasOne("AnseoConnect.Data.Entities.School", null)
@@ -781,28 +490,6 @@ namespace AnseoConnect.Data.Migrations
                         .HasForeignKey("SchoolId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Message", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Guardian", "Guardian")
-                        .WithMany("Messages")
-                        .HasForeignKey("GuardianId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guardian");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.SafeguardingAlert", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Case", "Case")
-                        .WithMany("SafeguardingAlerts")
-                        .HasForeignKey("CaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Case");
                 });
 
             modelBuilder.Entity("AnseoConnect.Data.Entities.School", b =>
@@ -895,19 +582,8 @@ namespace AnseoConnect.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Case", b =>
-                {
-                    b.Navigation("SafeguardingAlerts");
-
-                    b.Navigation("TimelineEvents");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.Guardian", b =>
                 {
-                    b.Navigation("ConsentStates");
-
-                    b.Navigation("Messages");
-
                     b.Navigation("StudentGuardians");
                 });
 
@@ -921,8 +597,6 @@ namespace AnseoConnect.Data.Migrations
             modelBuilder.Entity("AnseoConnect.Data.Entities.Student", b =>
                 {
                     b.Navigation("AttendanceMarks");
-
-                    b.Navigation("Cases");
 
                     b.Navigation("StudentGuardians");
                 });

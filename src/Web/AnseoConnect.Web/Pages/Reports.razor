@@ -1,0 +1,13 @@
+@page "/reports"
+@attribute [Authorize]
+
+<PageTitle>Reports</PageTitle>
+
+<div class="summary-row">
+    <SummaryTile Label="Same-day contact rate" Value="82%" />
+    <SummaryTile Label="Response rate" Value="61%" Hint="SMS + Email" />
+    <SummaryTile Label="Opt-out rate" Value="3%" />
+    <SummaryTile Label="Tier 2 opened" Value="12" Hint="last 7 days" />
+</div>
+
+<p>Minimal reporting for v0.1. Extend via API when ready.</p>

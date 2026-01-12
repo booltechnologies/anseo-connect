@@ -1,0 +1,34 @@
+.compose-grid {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.compose-grid label {
+    color: #cbd5e1;
+    padding-top: 6px;
+}
+
+.body-input {
+    width: 100%;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.consent-panel {
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px 0;
+    background: #111827;
+    color: #cbd5e1;
+}
+
+.consent-header {
+    font-weight: 700;
+    margin-bottom: 4px;
+}

@@ -1,0 +1,24 @@
+@page "/school-switcher"
+@page "/select-school"
+@attribute [AllowAnonymous]
+@inject NavigationManager Navigation
+
+<PageTitle>Select school</PageTitle>
+
+<div class="switcher">
+    <h2>Select school</h2>
+    @foreach (var school in Schools)
+    {
+        <DxButton CssClass="switcher-button" Text="@school" Click="() => Choose(school)" />
+    }
+</div>
+
+@code {
+    private readonly List<string> Schools = new() { "St. Brigid's", "Northside College" };
+
+    private void Choose(string school)
+    {
+        // In a full build this would persist to user profile / token
+        Navigation.NavigateTo("/today", true);
+    }
+}

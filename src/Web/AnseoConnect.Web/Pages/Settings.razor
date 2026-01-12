@@ -1,0 +1,107 @@
+@page "/settings"
+@attribute [Authorize]
+@inject SettingsClient SettingsClient
+
+<PageTitle>Settings</PageTitle>
+
+@if (SchoolSettings is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="summary-row">
+        <SummaryTile Label="Timezone" Value="@SchoolSettings?.Timezone" />
+        <SummaryTile Label="Channel order" Value="@SchoolSettings?.ChannelOrder" />
+        <SummaryTile Label="Policy pack" Value="@(PolicyPack?.PackName ?? string.Empty)" Hint="@PolicyPack?.Version" />
+    </div>
+
+    <h3>School settings</h3>
+    <DxFormLayout CssClass="settings-form">
+        <DxFormLayoutItem Caption="Timezone">
+            <DxTextBox @bind-Text="SchoolSettings.Timezone" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="AM cutoff">
+            <DxTextBox @bind-Text="SchoolSettings.AmCutoff" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="PM cutoff">
+            <DxTextBox @bind-Text="SchoolSettings.PmCutoff" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Channel order">
+            <DxTextBox @bind-Text="SchoolSettings.ChannelOrder" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Policy pack">
+            <DxTextBox @bind-Text="SchoolSettings.PolicyPackVersion" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem>
+            <DxButton Text="Save" Click="SaveSettings" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+
+    <h3>Integrations</h3>
+    <DxGrid Data="Integrations">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(IntegrationStatusDto.Name)" Caption="Name" />
+            <DxGridDataColumn FieldName="@nameof(IntegrationStatusDto.Status)" Caption="Status" />
+            <DxGridDataColumn FieldName="@nameof(IntegrationStatusDto.Detail)" Caption="Detail" />
+            <DxGridDataColumn FieldName="@nameof(IntegrationStatusDto.LastSyncAtUtc)" Caption="Last sync" />
+        </Columns>
+    </DxGrid>
+
+    <h3>Roles & Recipients</h3>
+    <DxFormLayout>
+        <DxFormLayoutItem Caption="Attendance role">
+            <DxTextBox @bind-Text="Roles.Attendance" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Safeguarding lead">
+            <DxTextBox @bind-Text="Roles.Safeguarding" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Escalation email">
+            <DxTextBox @bind-Text="Roles.EscalationEmail" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+
+    @if (!string.IsNullOrWhiteSpace(SaveMessage))
+    {
+        <div class="card note">@SaveMessage</div>
+    }
+}
+
+@code {
+    private SchoolSettingsDto? SchoolSettings { get; set; }
+    private PolicyPackAssignmentDto? PolicyPack { get; set; }
+    private IReadOnlyList<IntegrationStatusDto> Integrations { get; set; } = Array.Empty<IntegrationStatusDto>();
+    private string SaveMessage { get; set; } = string.Empty;
+    private RolesVm Roles { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SchoolSettings = await SettingsClient.GetSchoolSettingsAsync();
+        PolicyPack = await SettingsClient.GetPolicyPackAsync();
+        Integrations = await SettingsClient.GetIntegrationsAsync();
+    }
+
+    private async Task SaveSettings()
+    {
+        SaveMessage = string.Empty;
+        if (SchoolSettings != null)
+        {
+            var ok = await SettingsClient.UpdateSchoolSettingsAsync(SchoolSettings);
+            SaveMessage = ok ? "Saved school settings." : "Failed to save school settings.";
+        }
+
+        if (PolicyPack != null)
+        {
+            await SettingsClient.UpdatePolicyPackAsync(PolicyPack);
+        }
+
+        // Roles/integrations PUT would go here; currently stubbed
+    }
+
+    private sealed record RolesVm
+    {
+        public string Attendance { get; set; } = string.Empty;
+        public string Safeguarding { get; set; } = string.Empty;
+        public string EscalationEmail { get; set; } = string.Empty;
+    }
+}

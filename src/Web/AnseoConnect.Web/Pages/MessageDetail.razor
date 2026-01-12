@@ -1,0 +1,35 @@
+@page "/messages/{MessageId:guid}"
+@attribute [Authorize]
+@inject MessagesClient MessagesClient
+@using MessageDetailModel = AnseoConnect.Client.Models.MessageDetail
+
+<PageTitle>Message detail</PageTitle>
+
+@if (Detail is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="message-header">
+        <h2>@Detail.Summary.StudentName</h2>
+        <p>@Detail.Summary.Channel · @Detail.Summary.Status · @Detail.Summary.CreatedAtUtc</p>
+    </div>
+
+    <h4>Body</h4>
+    <pre>@Detail.Body</pre>
+
+    <h4>Timeline</h4>
+    <Timeline MessageEvents="Detail.Timeline" />
+}
+
+@code {
+    [Parameter] public Guid MessageId { get; set; }
+
+    private MessageDetailModel? Detail { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Detail = await MessagesClient.GetMessageAsync(MessageId);
+    }
+}

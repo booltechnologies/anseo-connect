@@ -1,0 +1,14 @@
+<div class="summary-tile">
+    <div class="summary-label">@Label</div>
+    <div class="summary-value">@Value</div>
+    @if (!string.IsNullOrWhiteSpace(Hint))
+    {
+        <div class="summary-hint">@Hint</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Hint { get; set; }
+}

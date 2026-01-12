@@ -1,0 +1,48 @@
+@page "/admin"
+@attribute [Authorize]
+
+<PageTitle>Admin</PageTitle>
+
+<h2>Tenant administration</h2>
+<p>This area will host tenant creation, staff provisioning, Entra group mapping, audit log, and feature flags.</p>
+
+<div class="summary-row">
+    <SummaryTile Label="Tenants" Value="1" />
+    <SummaryTile Label="Schools" Value="1" />
+    <SummaryTile Label="Staff" Value="N/A" />
+</div>
+
+<h3>Actions</h3>
+<DxButton Text="Open audit log" />
+<DxButton Text="Provision school" />
+<DxButton Text="Manage Entra groups" />
+
+<h3>Provisioning (stub)</h3>
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Tenant name">
+        <DxTextBox @bind-Text="TenantName" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="School name">
+        <DxTextBox @bind-Text="SchoolName" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Staff email">
+        <DxTextBox @bind-Text="StaffEmail" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem>
+        <DxButton Text="Create (stub)" Click="CreateStub" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<DxMemo Rows="4" @bind-Text="ProvisionLog" ReadOnly="true" />
+
+@code {
+    private string TenantName { get; set; } = string.Empty;
+    private string SchoolName { get; set; } = string.Empty;
+    private string StaffEmail { get; set; } = string.Empty;
+    private string ProvisionLog { get; set; } = "Not provisioned.";
+
+    private void CreateStub()
+    {
+        ProvisionLog = $"Stub provision created for tenant '{TenantName}', school '{SchoolName}', staff '{StaffEmail}'.";
+    }
+}

@@ -1,0 +1,35 @@
+@using AnseoConnect.Contracts.DTOs
+@using AnseoConnect.Client.Models
+
+<div class="timeline">
+    @if (CaseEvents != null)
+    {
+        <DxGrid Data="CaseEvents">
+            <Columns>
+                <DxGridDataColumn FieldName="@nameof(CaseTimelineEventDto.EventType)" Caption="Event" />
+                <DxGridDataColumn FieldName="@nameof(CaseTimelineEventDto.CreatedAtUtc)" Caption="When" />
+                <DxGridDataColumn FieldName="@nameof(CaseTimelineEventDto.CreatedBy)" Caption="By" />
+                <DxGridDataColumn FieldName="@nameof(CaseTimelineEventDto.EventData)" Caption="Details" />
+            </Columns>
+        </DxGrid>
+    }
+    else if (MessageEvents != null)
+    {
+        <DxGrid Data="MessageEvents">
+            <Columns>
+                <DxGridDataColumn FieldName="@nameof(MessageTimelineEvent.EventType)" Caption="Event" />
+                <DxGridDataColumn FieldName="@nameof(MessageTimelineEvent.TimestampUtc)" Caption="When" />
+                <DxGridDataColumn FieldName="@nameof(MessageTimelineEvent.Detail)" Caption="Details" />
+            </Columns>
+        </DxGrid>
+    }
+    else
+    {
+        <div class="empty">No timeline events available.</div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<CaseTimelineEventDto>? CaseEvents { get; set; }
+    [Parameter] public IEnumerable<MessageTimelineEvent>? MessageEvents { get; set; }
+}

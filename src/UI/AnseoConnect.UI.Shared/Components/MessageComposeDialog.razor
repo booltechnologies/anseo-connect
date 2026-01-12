@@ -1,0 +1,101 @@
+@using AnseoConnect.Client.Models
+@using Microsoft.AspNetCore.Components.Forms
+
+<DxPopup Visible="@Visible"
+         Width="560px"
+         ShowCloseButton="true"
+         VisibleChanged="OnVisibleChanged">
+    <HeaderTemplate>Compose message</HeaderTemplate>
+    <BodyTemplate Context="popupCtx">
+        <EditForm Model="@Model" OnValidSubmit="SendAsync">
+            <ChildContent Context="formCtx">
+                <DataAnnotationsValidator />
+                <div class="compose-grid">
+                    <label>Channel</label>
+                    <InputSelect @bind-Value="Model.Channel">
+                        <option>SMS</option>
+                        <option>Email</option>
+                    </InputSelect>
+
+                    <label>Template</label>
+                    <DxComboBox @bind-Value="Model.Template" Data="Templates" />
+
+                    <label>Preview</label>
+                    <InputTextArea class="body-input" @bind-Value="Model.BodyPreview" rows="5" />
+                </div>
+                <div class="compose-grid">
+                    <label>Guardians</label>
+                    <DxListBox Data="GuardianOptions"
+                               TextFieldName="@nameof(GuardianContact.Name)"
+                               ValueFieldName="@nameof(GuardianContact.GuardianId)"
+                               SelectionMode="ListSelectionMode.Multiple"
+                               @bind-Values="Model.GuardianIds" />
+                </div>
+                <div class="consent-panel">
+                    <div class="consent-header">Consent decision</div>
+                    <p>Channel: @Model.Channel</p>
+                    <p>Status: @ConsentStatus?.State ?? "UNKNOWN"</p>
+                    <p>Source: @ConsentStatus?.Source ?? "N/A"</p>
+                </div>
+                <div class="compose-grid">
+                    <label>Other guardian (optional)</label>
+                    <InputText @bind-Value="Model.OtherGuardian" placeholder="Name/phone/email" />
+                </div>
+                <div class="actions">
+                    <DxButton Text="Send" ButtonType="ButtonType.Submit" />
+                    <DxButton Text="Cancel" Click="Cancel" />
+                </div>
+            </ChildContent>
+        </EditForm>
+    </BodyTemplate>
+</DxPopup>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public Guid StudentId { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public EventCallback<MessageComposeRequest> OnSend { get; set; }
+
+    [Parameter] public ConsentStatusDto? ConsentStatus { get; set; }
+    [Parameter] public IReadOnlyList<GuardianContact> GuardianOptions { get; set; } = Array.Empty<GuardianContact>();
+    [Parameter] public IReadOnlyList<string> TemplateOptions { get; set; } = Array.Empty<string>();
+
+    private ComposeModel Model { get; set; } = new();
+    private IReadOnlyList<string> Templates => TemplateOptions.Count == 0 ? new[] { "UnexplainedAbsence", "AttendancePlan", "SafeguardingAlert" } : TemplateOptions;
+
+    protected override void OnParametersSet()
+    {
+        Model.StudentId = StudentId;
+    }
+
+    private async Task OnVisibleChanged(bool value)
+    {
+        Visible = value;
+        await VisibleChanged.InvokeAsync(value);
+    }
+
+    private async Task SendAsync()
+    {
+        var request = new MessageComposeRequest(
+            Model.StudentId,
+            Model.GuardianIds,
+            Model.Channel,
+            Model.Template,
+            Model.BodyPreview,
+            string.IsNullOrWhiteSpace(Model.OtherGuardian) ? null : Model.OtherGuardian);
+        await OnSend.InvokeAsync(request);
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Cancel() => await VisibleChanged.InvokeAsync(false);
+
+    private sealed class ComposeModel
+    {
+        public Guid StudentId { get; set; }
+        public List<Guid> GuardianIds { get; set; } = new();
+        public string Channel { get; set; } = "SMS";
+        public string Template { get; set; } = "UnexplainedAbsence";
+        public string BodyPreview { get; set; } = "Hello, your student was absent today.";
+        public string OtherGuardian { get; set; } = string.Empty;
+    }
+}

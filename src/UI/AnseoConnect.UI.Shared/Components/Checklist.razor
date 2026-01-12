@@ -1,0 +1,14 @@
+@using AnseoConnect.Client.Models
+
+<DxGrid Data="@Items">
+    <Columns>
+        <DxGridDataColumn FieldName="@nameof(ChecklistItemDto.Title)" Caption="Item" />
+        <DxGridDataColumn FieldName="@nameof(ChecklistItemDto.Status)" Caption="Status" />
+        <DxGridDataColumn FieldName="@nameof(ChecklistItemDto.Required)" Caption="Required" />
+        <DxGridDataColumn FieldName="@nameof(ChecklistItemDto.Notes)" Caption="Notes" />
+    </Columns>
+</DxGrid>
+
+@code {
+    [Parameter] public IReadOnlyList<ChecklistItemDto> Items { get; set; } = Array.Empty<ChecklistItemDto>();
+}

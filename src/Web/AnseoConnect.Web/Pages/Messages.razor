@@ -1,0 +1,209 @@
+@page "/messages"
+@attribute [Authorize]
+@inject MessagesClient MessagesClient
+@inject NavigationManager Navigation
+@inject ConsentClient ConsentClient
+@inject StudentsClient StudentsClient
+@inject SampleDataProvider SampleData
+
+<PageTitle>Messages</PageTitle>
+
+<div class="filters">
+    <DxComboBox @bind-Value="ChannelFilter" Data="@Channels" NullText="Channel (all)" />
+    <DxComboBox @bind-Value="StatusFilter" Data="@Statuses" NullText="Status (all)" />
+    <DxCheckBox @bind-Value="FailedOnly" Text="Failed only" />
+    <DxDateEdit @bind-Date="StartDate" NullText="From date" />
+    <DxDateEdit @bind-Date="EndDate" NullText="To date" />
+    <DxButton Text="Apply filters" Click="ApplyFilters" />
+</div>
+
+@if (FilteredMessages is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <DxGrid Data="FilteredMessages"
+            PageSize="PageSize"
+            FilterRowVisible="true"
+            SelectionMode="GridSelectionMode.Single"
+            SelectedDataItem="@Selected"
+            SelectedDataItemChanged="OnSelectedChanged">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.Status)" Caption="Status" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.MessageType)" Caption="Type" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.CreatedAtUtc)" Caption="Sent" />
+        </Columns>
+    </DxGrid>
+
+    <div class="actions-row">
+        <DxButton Text="View detail" Click="OpenSelected" />
+        <DxButton Text="Compose" Click="() => ShowCompose(Guid.Empty)" />
+        <DxPager @bind-PageIndex="PageIndex" PageSize="PageSize" ItemCount="TotalCount" />
+    </div>
+}
+
+<DxDrawer @bind-IsOpen="DetailVisible" Position="DrawerPosition.Right" Width="480px" ApplyBackgroundShading="true">
+    <BodyTemplate>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div>
+                    <h4>@(Detail?.Summary.StudentName ?? "Message detail")</h4>
+                    @if (Detail != null)
+                    {
+                        <p>@Detail.Summary.Channel · @Detail.Summary.Status · @Detail.Summary.CreatedAtUtc</p>
+                    }
+                </div>
+                <DxButton IconCssClass="dx-icon-close" Click="() => DetailVisible = false" />
+            </div>
+            @if (Detail is null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                <h5>Summary</h5>
+                <p>Template: @Detail.Template</p>
+                <p>Recipients: @(Detail.Recipients is { Count: > 0 } ? string.Join(", ", Detail.Recipients) : "Unknown")</p>
+                <p>Provider ref: @Detail.Summary.ProviderMessageId ?? "N/A"</p>
+                <p>Consent: @Detail.ConsentStatus ?? "UNKNOWN" (@Detail.ConsentSource ?? "N/A")</p>
+
+                <h5>Body</h5>
+                <pre>@Detail.Body</pre>
+
+                @if (Detail.Tokens?.Count > 0)
+                {
+                    <h5>Tokens</h5>
+                    <DxGrid Data="Detail.Tokens">
+                        <Columns>
+                            <DxGridDataColumn FieldName="Key" Caption="Key" />
+                            <DxGridDataColumn FieldName="Value" Caption="Value" />
+                        </Columns>
+                    </DxGrid>
+                }
+
+                <h5>Timeline</h5>
+                <Timeline MessageEvents="Detail.Timeline" />
+            }
+        </div>
+    </BodyTemplate>
+</DxDrawer>
+
+<MessageComposeDialog Visible="@ComposeVisible"
+                     VisibleChanged="v => ComposeVisible = v"
+                     StudentId="@ComposeStudentId"
+                     GuardianOptions="@ComposeGuardians"
+                     ConsentStatus="@ComposeConsent"
+                     TemplateOptions="@SampleData.Templates"
+                     OnSend="SendMessage" />
+
+@code {
+    private List<MessageSummary>? MessageItems { get; set; }
+    private List<MessageSummary>? FilteredMessages { get; set; }
+    private MessageSummary? Selected { get; set; }
+    private Client.Models.MessageDetail? Detail { get; set; }
+    private bool DetailVisible { get; set; }
+    private bool ComposeVisible { get; set; }
+    private Guid ComposeStudentId { get; set; }
+    private ConsentStatusDto? ComposeConsent { get; set; }
+    private IReadOnlyList<GuardianContact> ComposeGuardians { get; set; } = Array.Empty<GuardianContact>();
+    private string? ChannelFilter { get; set; }
+    private string? StatusFilter { get; set; }
+    private bool FailedOnly { get; set; }
+    private List<string> Channels { get; set; } = new() { "SMS", "Email" };
+    private List<string> Statuses { get; set; } = new() { "Queued", "Sent", "Delivered", "Failed" };
+    private DateTime? StartDate { get; set; }
+    private DateTime? EndDate { get; set; }
+    private int PageIndex { get; set; }
+    private int PageSize { get; set; } = 20;
+    private int TotalCount { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+    }
+
+    private void OpenSelected()
+    {
+        var message = Selected ?? MessageItems?.FirstOrDefault();
+        if (message == null) return;
+        _ = LoadDetail(message.MessageId);
+    }
+
+    private void ApplyFilters()
+    {
+        _ = LoadMessages();
+    }
+
+    private Task OnSelectedChanged(MessageSummary? summary)
+    {
+        Selected = summary;
+        return Task.CompletedTask;
+    }
+
+    private async Task LoadDetail(Guid messageId)
+    {
+        DetailVisible = true;
+        Detail = await MessagesClient.GetMessageAsync(messageId);
+    }
+
+    private async void ShowCompose(Guid studentId)
+    {
+        ComposeStudentId = studentId;
+        ComposeConsent = null;
+        ComposeGuardians = Array.Empty<GuardianContact>();
+
+        // if no student provided, try to use selected message's student
+        if (ComposeStudentId == Guid.Empty && Selected != null)
+        {
+            ComposeStudentId = Selected.StudentId;
+        }
+
+        if (ComposeStudentId != Guid.Empty)
+        {
+            var profile = await StudentsClient.GetStudentAsync(ComposeStudentId);
+            if (profile != null)
+            {
+                ComposeGuardians = profile.Guardians;
+                var primary = profile.Guardians.FirstOrDefault();
+                if (primary != null)
+                {
+                    ComposeConsent = await ConsentClient.GetConsentStatusAsync(primary.GuardianId, "SMS");
+                }
+            }
+        }
+        else
+        {
+            // fallback guardians for compose when no context
+            ComposeGuardians = SampleData.GuardiansByStudent(Guid.Empty);
+            ComposeConsent = new ConsentStatusDto(Guid.Empty, "Guardian", "SMS", "UNKNOWN", DateTimeOffset.UtcNow, "SYSTEM");
+        }
+
+        ComposeVisible = true;
+    }
+
+    private async Task SendMessage(MessageComposeRequest request)
+    {
+        await MessagesClient.SendMessageAsync(request);
+        ComposeVisible = false;
+        await LoadMessages();
+    }
+
+    private async Task LoadMessages()
+    {
+        var result = await MessagesClient.GetMessagesAsync(
+            channel: ChannelFilter,
+            status: FailedOnly ? "Failed" : StatusFilter,
+            start: StartDate.HasValue ? new DateTimeOffset(StartDate.Value) : null,
+            end: EndDate.HasValue ? new DateTimeOffset(EndDate.Value) : null,
+            failedOnly: FailedOnly,
+            skip: PageIndex * PageSize,
+            take: PageSize);
+
+        MessageItems = result.Items.ToList();
+        TotalCount = result.TotalCount;
+        FilteredMessages = MessageItems;
+    }
+}

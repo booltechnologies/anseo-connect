@@ -1,0 +1,178 @@
+@page "/today"
+@attribute [Authorize]
+@inject TodayClient TodayClient
+@inject MessagesClient MessagesClient
+@inject StudentsClient StudentsClient
+@inject ConsentClient ConsentClient
+@inject SampleDataProvider SampleData
+@inject SafeguardingClient SafeguardingClient
+
+<PageTitle>Today</PageTitle>
+
+@if (Dashboard is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="summary-row">
+        <SummaryTile Label="Unexplained absences" Value="@Dashboard.Absences.Count.ToString()" />
+        <SummaryTile Label="Tasks due" Value="@Dashboard.Tasks.Count.ToString()" />
+        <SummaryTile Label="Safeguarding alerts" Value="@Dashboard.SafeguardingAlerts.Count.ToString()" />
+    </div>
+
+    <h3>Unexplained absences</h3>
+    <DxGrid Data="Dashboard.Absences"
+            PageSize="10"
+            FilterRowVisible="true"
+            SelectionMode="GridSelectionMode.Multiple"
+            SelectedDataItems="@SelectedAbsences"
+            SelectedDataItemsChanged="OnAbsencesSelected">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(AbsenceDto.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(AbsenceDto.Date)" Caption="Date" />
+            <DxGridDataColumn FieldName="@nameof(AbsenceDto.Session)" Caption="Session" />
+            <DxGridDataColumn FieldName="@nameof(AbsenceDto.ReasonCode)" Caption="Reason" />
+        </Columns>
+    </DxGrid>
+
+    <div class="actions-row">
+        <DxButton Text="Compose message" Click="() => ShowCompose(Dashboard.Absences.FirstOrDefault()?.StudentId)" />
+        <DxButton Text="Bulk SMS" Click="BulkSms" Enabled="SelectedAbsences.Any()" />
+        <DxButton Text="Bulk Email" Click="BulkEmail" Enabled="SelectedAbsences.Any()" />
+    </div>
+
+    <h3>Tasks due today</h3>
+    <DxGrid Data="Dashboard.Tasks" FilterRowVisible="true">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(TaskSummary.Title)" Caption="Task" />
+            <DxGridDataColumn FieldName="@nameof(TaskSummary.Category)" Caption="Category" />
+            <DxGridDataColumn FieldName="@nameof(TaskSummary.DueAtUtc)" Caption="Due" />
+            <DxGridDataColumn FieldName="@nameof(TaskSummary.Status)" Caption="Status" />
+        </Columns>
+    </DxGrid>
+
+    <h3>Safeguarding alerts</h3>
+    <DxGrid Data="Dashboard.SafeguardingAlerts">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.Severity)" Caption="Severity" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.TriggerSummary)" Caption="Trigger" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.CreatedAtUtc)" Caption="Created" />
+        </Columns>
+    </DxGrid>
+
+    <h3>Message failures / missing contacts</h3>
+    <DxGrid Data="Dashboard.Failures ?? Array.Empty<MessageSummary>()">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.Status)" Caption="Status" />
+            <DxGridDataColumn FieldName="@nameof(MessageSummary.CreatedAtUtc)" Caption="When" />
+        </Columns>
+    </DxGrid>
+
+    <h3>Missing contacts</h3>
+    <DxGrid Data="Dashboard.MissingContacts ?? Array.Empty<GuardianContact>()">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(GuardianContact.Name)" Caption="Guardian" />
+            <DxGridDataColumn FieldName="@nameof(GuardianContact.Mobile)" Caption="Mobile" />
+            <DxGridDataColumn FieldName="@nameof(GuardianContact.Email)" Caption="Email" />
+        </Columns>
+    </DxGrid>
+
+    <h3>Safeguarding quick actions</h3>
+    <DxButton Text="Open safeguarding queue" Click="() => NavigationManager.NavigateTo(\"/safeguarding\")" />
+    <DxButton Text="Acknowledge first alert" Click="AckFirstSafeguarding" Enabled="Dashboard.SafeguardingAlerts.Any()" />
+}
+
+<MessageComposeDialog Visible="@ComposeVisible"
+                     VisibleChanged="OnComposeVisibleChanged"
+                     StudentId="@ComposeStudentId"
+                     GuardianOptions="@ComposeGuardians"
+                     ConsentStatus="@ComposeConsent"
+                     TemplateOptions="@SampleData.Templates"
+                     OnSend="SendMessage" />
+
+@code {
+    private TodayDashboardDto? Dashboard { get; set; }
+    private bool ComposeVisible { get; set; }
+    private Guid ComposeStudentId { get; set; }
+    private List<AbsenceDto> SelectedAbsences { get; set; } = new();
+    private ConsentStatusDto? ComposeConsent { get; set; }
+    private IReadOnlyList<GuardianContact> ComposeGuardians { get; set; } = Array.Empty<GuardianContact>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Dashboard = await TodayClient.GetDashboardAsync();
+    }
+
+    private async void ShowCompose(Guid? studentId)
+    {
+        ComposeStudentId = studentId ?? Guid.Empty;
+        ComposeGuardians = Array.Empty<GuardianContact>();
+        ComposeConsent = null;
+
+        if (ComposeStudentId != Guid.Empty)
+        {
+            var profile = await StudentsClient.GetStudentAsync(ComposeStudentId);
+            if (profile != null)
+            {
+                ComposeGuardians = profile.Guardians;
+                var primary = profile.Guardians.FirstOrDefault();
+                if (primary != null)
+                {
+                    ComposeConsent = await ConsentClient.GetConsentStatusAsync(primary.GuardianId, "SMS");
+                }
+            }
+        }
+
+        ComposeVisible = true;
+    }
+
+    private Task OnComposeVisibleChanged(bool value)
+    {
+        ComposeVisible = value;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SendMessage(MessageComposeRequest request)
+    {
+        await MessagesClient.SendMessageAsync(request);
+    }
+
+    private Task OnAbsencesSelected(IEnumerable<AbsenceDto> selected)
+    {
+        SelectedAbsences = selected.ToList();
+        return Task.CompletedTask;
+    }
+
+    private void BulkSms()
+    {
+        var first = SelectedAbsences.FirstOrDefault();
+        if (first != null)
+        {
+            ShowCompose(first.StudentId);
+        }
+    }
+
+    private void BulkEmail()
+    {
+        var first = SelectedAbsences.FirstOrDefault();
+        if (first != null)
+        {
+            ShowCompose(first.StudentId);
+        }
+    }
+
+    private async Task AckFirstSafeguarding()
+    {
+        if (Dashboard?.SafeguardingAlerts.Any() == true)
+        {
+            var first = Dashboard.SafeguardingAlerts.First();
+            var updated = await SafeguardingClient.AcknowledgeAsync(first.AlertId) ?? first;
+            Dashboard = Dashboard with { SafeguardingAlerts = new[] { updated }.Concat(Dashboard.SafeguardingAlerts.Skip(1)).ToList() };
+        }
+    }
+}

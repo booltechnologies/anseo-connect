@@ -1,0 +1,63 @@
+@page "/safeguarding"
+@attribute [Authorize]
+@inject SafeguardingClient SafeguardingClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Safeguarding queue</PageTitle>
+
+@if (Alerts is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <DxGrid Data="Alerts"
+            SelectionMode="GridSelectionMode.Single"
+            SelectedDataItem="@Selected"
+            SelectedDataItemChanged="alert => Selected = alert">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.Severity)" Caption="Severity" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.TriggerSummary)" Caption="Trigger" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.CreatedAtUtc)" Caption="Created" />
+            <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.AcknowledgedBy)" Caption="Acknowledged by" />
+        </Columns>
+    </DxGrid>
+
+    <div class="actions-row">
+        <DxButton Text="Open" Click="OpenSelected" />
+        <DxButton Text="Acknowledge" Click="AcknowledgeSelected" />
+    </div>
+}
+
+@code {
+    private List<SafeguardingAlertSummary>? Alerts { get; set; }
+    private SafeguardingAlertSummary? Selected { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Alerts = (await SafeguardingClient.GetQueueAsync()).ToList();
+    }
+
+    private void OpenSelected()
+    {
+        var item = Selected ?? Alerts?.FirstOrDefault();
+        if (item != null)
+        {
+            NavigationManager.NavigateTo($"/safeguarding/{item.AlertId}");
+        }
+    }
+
+    private async Task AcknowledgeSelected()
+    {
+        if (Selected == null)
+        {
+            return;
+        }
+
+        Selected = await SafeguardingClient.AcknowledgeAsync(Selected.AlertId) ?? Selected;
+        Alerts = Alerts?
+            .Select(a => a.AlertId == Selected.AlertId ? Selected : a)
+            .ToList();
+    }
+}

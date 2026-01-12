@@ -1,0 +1,95 @@
+@page "/cases"
+@attribute [Authorize]
+@inject CasesClient CasesClient
+@inject NavigationManager Navigation
+
+<PageTitle>Cases</PageTitle>
+
+<div class="filters">
+    <DxComboBox @bind-Value="StatusFilter" Data="@Statuses" NullText="Status (OPEN/CLOSED)" />
+    <DxComboBox @bind-Value="TypeFilter" Data="@Types" NullText="Type (all)" />
+    <DxSpinEdit @bind-Value="TierFilter" Min="1" Max="3" NullText="Tier" />
+    <DxTextBox @bind-Text="YearFilter" NullText="Year group" />
+    <DxTextBox @bind-Text="RoleFilter" NullText="Assigned role" />
+    <DxCheckBox @bind-Value="OverdueFilter" Text="Overdue only" />
+    <DxButton Text="Apply filters" Click="ApplyFilters" />
+</div>
+
+@if (CaseItems is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <DxGrid Data="CaseItems"
+            PageSize="PageSize"
+            FilterRowVisible="true"
+            SelectionMode="GridSelectionMode.Single"
+            SelectedDataItem="@Selected"
+            SelectedDataItemChanged="selected => Selected = selected">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(CaseDto.StudentName)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(CaseDto.CaseType)" Caption="Type" />
+            <DxGridDataColumn FieldName="@nameof(CaseDto.Tier)" Caption="Tier" />
+            <DxGridDataColumn FieldName="@nameof(CaseDto.Status)" Caption="Status" />
+            <DxGridDataColumn FieldName="@nameof(CaseDto.CreatedAtUtc)" Caption="Created" />
+        </Columns>
+    </DxGrid>
+
+    <div class="actions-row">
+        <DxButton Text="Open selected" Click="OpenSelected" />
+        <DxPager @bind-PageIndex="PageIndex" PageSize="PageSize" ItemCount="TotalCount" />
+    </div>
+}
+
+@code {
+    private List<CaseDto>? CaseItems { get; set; }
+    private CaseDto? Selected { get; set; }
+    private int PageIndex { get; set; }
+    private int PageSize { get; set; } = 20;
+    private int TotalCount { get; set; }
+    private string? StatusFilter { get; set; } = "OPEN";
+    private string? TypeFilter { get; set; }
+    private int? TierFilter { get; set; }
+    private string? YearFilter { get; set; }
+    private string? RoleFilter { get; set; }
+    private bool? OverdueFilter { get; set; }
+    private List<string> Statuses { get; set; } = new() { "OPEN", "CLOSED" };
+    private List<string> Types { get; set; } = new() { "ATTENDANCE", "SAFEGUARDING" };
+
+    private async Task LoadPage()
+    {
+        var skip = PageIndex * PageSize;
+        var result = await CasesClient.GetOpenCasesAsync(
+            status: StatusFilter ?? "OPEN",
+            caseType: TypeFilter,
+            tier: TierFilter,
+            yearGroup: YearFilter,
+            assignedRole: RoleFilter,
+            overdue: OverdueFilter,
+            skip: skip,
+            take: PageSize);
+        CaseItems = result.Items.ToList();
+        TotalCount = result.TotalCount;
+    }
+
+    private void OpenSelected()
+    {
+        var target = Selected ?? CaseItems?.FirstOrDefault();
+        if (target != null)
+        {
+            Navigation.NavigateTo($"/cases/{target.CaseId}");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPage();
+    }
+
+    private async Task ApplyFilters()
+    {
+        PageIndex = 0;
+        await LoadPage();
+    }
+}

@@ -1,29 +1,19 @@
-﻿using AnseoConnect.Data;
+using AnseoConnect.Data;
 using AnseoConnect.Data.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 var conn = Environment.GetEnvironmentVariable("ANSEO_SQL")
            ?? "Server=JHP;Database=AnseoConnectDev;User Id=sa;Password=F0urb4ll;TrustServerCertificate=True;";
 
-var services = new ServiceCollection();
+// Create tenant context directly (migrations don't need real tenant scoping)
+var tenantContext = new TenantContext();
+tenantContext.Set(Guid.Parse("11111111-1111-1111-1111-111111111111"), null);
 
-services.AddScoped<TenantContext>();
-services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+var options = new DbContextOptionsBuilder<AnseoConnectDbContext>()
+    .UseSqlServer(conn)
+    .Options;
 
-services.AddDbContext<AnseoConnectDbContext>((sp, opt) =>
-{
-    // tenant values are irrelevant for migrations, but must be non-empty for SaveChanges enforcement
-    var tc = sp.GetRequiredService<TenantContext>();
-    tc.Set(Guid.Parse("11111111-1111-1111-1111-111111111111"), null);
-
-    opt.UseSqlServer(conn);
-});
-
-var sp = services.BuildServiceProvider();
-
-using var scope = sp.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<AnseoConnectDbContext>();
+using var db = new AnseoConnectDbContext(options, tenantContext);
 
 Console.WriteLine("Applying migrations...");
 await db.Database.MigrateAsync();

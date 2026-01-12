@@ -1,0 +1,23 @@
+.consent-badge {
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid #1f2937;
+}
+
+.consent-badge.OPTED_IN {
+    background: #0f5132;
+    color: #bbf7d0;
+    border-color: #14532d;
+}
+
+.consent-badge.OPTED_OUT {
+    background: #4b5563;
+    color: #fca5a5;
+    border-color: #991b1b;
+}
+
+.consent-badge.UNKNOWN {
+    background: #1e293b;
+    color: #e5e7eb;
+}

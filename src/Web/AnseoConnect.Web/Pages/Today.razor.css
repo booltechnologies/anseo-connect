@@ -1,0 +1,17 @@
+.summary-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.actions-row {
+    margin: 12px 0;
+}
+
+.card.note {
+    padding: 12px;
+    border-radius: 8px;
+    background: #111827;
+    border: 1px solid #1f2937;
+    color: #cbd5e1;
+}

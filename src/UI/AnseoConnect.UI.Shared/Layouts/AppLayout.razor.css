@@ -1,0 +1,39 @@
+.app-drawer {
+    height: 100vh;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.drawer-header {
+    padding: 16px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+}
+
+.drawer-menu {
+    padding: 8px;
+}
+
+.layout-surface {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #0b1220;
+}
+
+.app-toolbar {
+    border-bottom: 1px solid #1e293b;
+    background: #0f172a;
+}
+
+.toolbar-title {
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.content {
+    padding: 20px;
+    overflow: auto;
+    flex: 1;
+}

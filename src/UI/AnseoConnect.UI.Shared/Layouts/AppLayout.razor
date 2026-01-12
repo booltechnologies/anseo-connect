@@ -1,0 +1,75 @@
+@inherits LayoutComponentBase
+
+<DxDrawer @bind-IsOpen="IsNavOpen"
+          CssClass="app-drawer"
+          PanelWidth="240px"
+          MiniModeEnabled="true"
+          MiniPanelWidth="64px">
+    <HeaderTemplate>
+        <div class="drawer-header">
+            <span class="brand-name">Anseo Connect</span>
+        </div>
+    </HeaderTemplate>
+    <BodyTemplate>
+        <DxMenu Orientation="Orientation.Vertical"
+                CssClass="drawer-menu"
+                EnableAnimation="false">
+            <Items>
+                <DxMenuItem Text="Today" NavigateUrl="/today" />
+                <DxMenuItem Text="Cases" NavigateUrl="/cases" />
+                <DxMenuItem Text="Messages" NavigateUrl="/messages" />
+                <DxMenuItem Text="Safeguarding" NavigateUrl="/safeguarding" />
+                <DxMenuItem Text="Students" NavigateUrl="/students" />
+                <DxMenuItem Text="Reports" NavigateUrl="/reports" />
+                <DxMenuItem Text="Settings" NavigateUrl="/settings" />
+                <DxMenuItem Text="Admin" NavigateUrl="/admin" />
+            </Items>
+        </DxMenu>
+    </BodyTemplate>
+    <TargetContent>
+        <div class="layout-surface">
+            <DxToolbar CssClass="app-toolbar" ItemClick="OnToolbarItemClick">
+                <Items>
+                    <DxToolbarItem Name="NavToggle" IconCssClass="dx-icon-menu" />
+                    <DxToolbarItem>
+                        <Template>
+                            <span class="toolbar-title">Anseo Connect</span>
+                        </Template>
+                    </DxToolbarItem>
+                    <DxToolbarItem BeginGroup="true" Width="320px">
+                        <Template>
+                            <DxTextBox Placeholder="Search student / case / guardian" Width="100%" />
+                        </Template>
+                    </DxToolbarItem>
+                    <DxToolbarItem Alignment="ToolbarItemAlignment.Right" IconCssClass="dx-icon-bell" />
+                    <DxToolbarItem Alignment="ToolbarItemAlignment.Right">
+                        <Template>
+                            <DxButton Text="Compose" />
+                        </Template>
+                    </DxToolbarItem>
+                    <DxToolbarItem Alignment="ToolbarItemAlignment.Right">
+                        <Template>
+                            <DxButton Text="Sign out" />
+                        </Template>
+                    </DxToolbarItem>
+                </Items>
+            </DxToolbar>
+
+            <main class="content">
+                @Body
+            </main>
+        </div>
+    </TargetContent>
+</DxDrawer>
+
+@code {
+    private bool IsNavOpen { get; set; } = true;
+
+    private void OnToolbarItemClick(ToolbarItemClickEventArgs args)
+    {
+        if (args.ItemName == "NavToggle")
+        {
+            IsNavOpen = !IsNavOpen;
+        }
+    }
+}

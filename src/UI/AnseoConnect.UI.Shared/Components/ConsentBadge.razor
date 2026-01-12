@@ -1,0 +1,12 @@
+<span class="consent-badge @State">@Label</span>
+
+@code {
+    [Parameter] public string State { get; set; } = "UNKNOWN";
+
+    private string Label => State switch
+    {
+        "OPTED_IN" => "Opted in",
+        "OPTED_OUT" => "Opted out",
+        _ => "Unknown"
+    };
+}

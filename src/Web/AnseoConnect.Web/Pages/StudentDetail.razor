@@ -1,0 +1,60 @@
+@page "/students/{StudentId:guid}"
+@attribute [Authorize]
+@inject StudentsClient StudentsClient
+
+<PageTitle>Student profile</PageTitle>
+
+@if (Profile is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h2>@Profile.Summary.Name</h2>
+    <p>@Profile.Summary.YearGroup · Risk: @Profile.Summary.Risk · Attendance: @Profile.Summary.AttendanceRate %</p>
+
+    <DxTabs>
+        <DxTabPage Text="Guardians">
+            <DxGrid Data="Profile.Guardians">
+                <Columns>
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.Name)" Caption="Name" />
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.Relationship)" Caption="Relationship" />
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.Mobile)" Caption="Mobile" />
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.Email)" Caption="Email" />
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.ConsentSms)" Caption="SMS" />
+                    <DxGridDataColumn FieldName="@nameof(GuardianContact.ConsentEmail)" Caption="Email consent" />
+                </Columns>
+            </DxGrid>
+        </DxTabPage>
+        <DxTabPage Text="Cases">
+            <DxGrid Data="Profile.Cases">
+                <Columns>
+                    <DxGridDataColumn FieldName="@nameof(CaseDto.CaseType)" Caption="Type" />
+                    <DxGridDataColumn FieldName="@nameof(CaseDto.Status)" Caption="Status" />
+                    <DxGridDataColumn FieldName="@nameof(CaseDto.Tier)" Caption="Tier" />
+                    <DxGridDataColumn FieldName="@nameof(CaseDto.CreatedAtUtc)" Caption="Created" />
+                </Columns>
+            </DxGrid>
+        </DxTabPage>
+        <DxTabPage Text="Messages">
+            <DxGrid Data="Profile.Messages">
+                <Columns>
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.Status)" Caption="Status" />
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.CreatedAtUtc)" Caption="Sent" />
+                </Columns>
+            </DxGrid>
+        </DxTabPage>
+    </DxTabs>
+}
+
+@code {
+    [Parameter] public Guid StudentId { get; set; }
+
+    private StudentProfile? Profile { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Profile = await StudentsClient.GetStudentAsync(StudentId);
+    }
+}

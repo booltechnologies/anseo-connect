@@ -1,0 +1,71 @@
+@page "/students"
+@attribute [Authorize]
+@inject StudentsClient StudentsClient
+@inject NavigationManager Navigation
+
+<PageTitle>Students</PageTitle>
+
+<div class="search-row">
+    <InputText @bind-Value="Query" placeholder="Search students (name/id)" />
+    <InputText @bind-Value="YearFilter" placeholder="Year filter" style="width:120px" />
+    <InputText @bind-Value="ExternalIdFilter" placeholder="External ID" style="width:140px" />
+    <DxComboBox @bind-Value="RiskFilter" Data="RiskOptions" NullText="Risk (all)" style="width:160px" />
+    <DxButton Text="Search" Click="Load" />
+</div>
+
+@if (StudentItems is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <DxGrid Data="StudentItems" FilterRowVisible="true" PageSize="PageSize">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(StudentSummary.Name)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(StudentSummary.YearGroup)" Caption="Year" />
+            <DxGridDataColumn FieldName="@nameof(StudentSummary.ExternalId)" Caption="External ID" />
+            <DxGridDataColumn FieldName="@nameof(StudentSummary.Risk)" Caption="Risk" />
+            <DxGridDataColumn FieldName="@nameof(StudentSummary.AttendanceRate)" Caption="Attendance %" />
+        </Columns>
+    </DxGrid>
+
+    <div class="actions-row">
+        <DxButton Text="Open profile" Click="OpenSelected" />
+        <DxPager @bind-PageIndex="PageIndex" PageSize="PageSize" ItemCount="TotalCount" />
+    </div>
+}
+
+@code {
+    private string? Query { get; set; }
+    private string? YearFilter { get; set; }
+    private string? RiskFilter { get; set; }
+    private string? ExternalIdFilter { get; set; }
+    private List<string> RiskOptions { get; set; } = new() { "Low", "Medium", "High" };
+    private List<StudentSummary>? StudentItems { get; set; }
+    private int PageIndex { get; set; }
+    private int PageSize { get; set; } = 20;
+    private int TotalCount { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var result = await StudentsClient.SearchAsync(Query, year: YearFilter, externalId: ExternalIdFilter, risk: RiskFilter);
+        var items = result.Items.ToList();
+
+        TotalCount = items.Count;
+        StudentItems = items.Skip(PageIndex * PageSize).Take(PageSize).ToList();
+    }
+
+    private void OpenSelected()
+    {
+        var student = StudentItems?.FirstOrDefault();
+        if (student != null)
+        {
+            Navigation.NavigateTo($"/students/{student.StudentId}");
+        }
+    }
+}

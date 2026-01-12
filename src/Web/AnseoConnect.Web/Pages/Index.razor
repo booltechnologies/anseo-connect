@@ -1,0 +1,18 @@
+@page "/"
+@attribute [AllowAnonymous]
+@inject NavigationManager Navigation
+@inject SessionState Session
+
+<PageTitle>Anseo Connect</PageTitle>
+
+<div class="loading-redirect">
+    Loading Anseo Connect...
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        var destination = Session.IsAuthenticated ? "/today" : "/signin";
+        Navigation.NavigateTo(destination, true);
+    }
+}

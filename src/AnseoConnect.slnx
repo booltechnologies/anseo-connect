@@ -15,4 +15,11 @@
     <Project Path="../tools/DBMigrator/DBMigrator.csproj" Id="ec0e2238-f0d2-4162-a300-4e151492e8ec" />
     <Project Path="../tools/PolicyPackTool/PolicyPackTool.csproj" Id="59e6d26f-fbef-415b-9df4-2a37aab53ad5" />
   </Folder>
+  <Folder Name="/UI/">
+    <Project Path="UI/AnseoConnect.Client/AnseoConnect.Client.csproj" />
+    <Project Path="UI/AnseoConnect.UI.Shared/AnseoConnect.UI.Shared.csproj" />
+  </Folder>
+  <Folder Name="/Web/">
+    <Project Path="Web/AnseoConnect.Web/AnseoConnect.Web.csproj" />
+  </Folder>
 </Solution>

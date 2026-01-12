@@ -1,0 +1,204 @@
+@page "/cases/{CaseId:guid}"
+@attribute [Authorize]
+@inject CasesClient CasesClient
+@inject StudentsClient StudentsClient
+@inject MessagesClient MessagesClient
+
+<PageTitle>Case detail</PageTitle>
+
+@if (Detail is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="case-header">
+        <div>
+            <h2>@Detail.Case.StudentName</h2>
+            <p>Type: @Detail.Case.CaseType · Tier @Detail.Case.Tier · Status: @Detail.Case.Status</p>
+            <p>Created: @Detail.Case.CreatedAtUtc.ToLocalTime()</p>
+        </div>
+        <div class="case-actions">
+            <DxButton Text="Add note" Click="() => ShowNote = true" />
+            <DxButton Text="Change tier" Click="() => ShowTier = true" />
+            <DxButton Text="Close case" Click="CloseCase" />
+        </div>
+    </div>
+
+    <DxTabs>
+        <DxTabPage Text="Overview">
+            <div class="card note">
+                <p><strong>Why this case exists:</strong> Policy-driven attendance/safeguarding trigger. Add policy explanation here.</p>
+                <p><strong>Guardian contacts:</strong></p>
+                @if (Profile?.Guardians?.Any() == true)
+                {
+                    <DxGrid Data="Profile.Guardians">
+                        <Columns>
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.Name)" Caption="Name" />
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.Relationship)" Caption="Relation" />
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.Mobile)" Caption="Mobile" />
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.Email)" Caption="Email" />
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.ConsentSms)" Caption="SMS" />
+                            <DxGridDataColumn FieldName="@nameof(GuardianContact.ConsentEmail)" Caption="Email consent" />
+                        </Columns>
+                    </DxGrid>
+                }
+                else
+                {
+                    <p>No guardian contact info available.</p>
+                }
+            </div>
+        </DxTabPage>
+        <DxTabPage Text="Timeline">
+            <Timeline CaseEvents="Detail.Case.TimelineEvents" />
+        </DxTabPage>
+        <DxTabPage Text="Checklist">
+            <Checklist Items="Detail.Checklist" />
+        </DxTabPage>
+        <DxTabPage Text="Messages">
+            <DxGrid Data="DetailMessages"
+                    SelectionMode="GridSelectionMode.Single"
+                    SelectedDataItem="@SelectedMessage"
+                    SelectedDataItemChanged="OnMessageSelected">
+                <Columns>
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.Status)" Caption="Status" />
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.MessageType)" Caption="Type" />
+                    <DxGridDataColumn FieldName="@nameof(MessageSummary.CreatedAtUtc)" Caption="When" />
+                </Columns>
+            </DxGrid>
+            <div class="message-thread">
+                @if (SelectedMessageDetail == null)
+                {
+                    <p>Select a message to view details.</p>
+                }
+                else
+                {
+                    <h5>@SelectedMessageDetail.Summary.MessageType (@SelectedMessageDetail.Summary.Channel)</h5>
+                    <p>Status: @SelectedMessageDetail.Summary.Status</p>
+                    <p>Recipients: @(SelectedMessageDetail.Recipients is { Count: > 0 } ? string.Join(", ", SelectedMessageDetail.Recipients) : "Unknown")</p>
+                    <p>Provider ref: @SelectedMessageDetail.Summary.ProviderMessageId ?? "N/A"</p>
+                    <p>Consent: @SelectedMessageDetail.ConsentStatus ?? "UNKNOWN" (@SelectedMessageDetail.ConsentSource ?? "N/A")</p>
+                    <pre>@SelectedMessageDetail.Body</pre>
+                    @if (SelectedMessageDetail.Tokens?.Count > 0)
+                    {
+                        <h6>Tokens</h6>
+                        <DxGrid Data="SelectedMessageDetail.Tokens">
+                            <Columns>
+                                <DxGridDataColumn FieldName="Key" Caption="Key" />
+                                <DxGridDataColumn FieldName="Value" Caption="Value" />
+                            </Columns>
+                        </DxGrid>
+                    }
+                    <Timeline MessageEvents="SelectedMessageDetail.Timeline" />
+                }
+            </div>
+        </DxTabPage>
+    </DxTabs>
+}
+
+<DxPopup Width="480px" Visible="@ShowNote" ShowCloseButton="true" VisibleChanged="v => ShowNote = v">
+    <HeaderTemplate>Add note</HeaderTemplate>
+    <BodyTemplate>
+        <DxMemo @bind-Text="NoteText" Rows="4" />
+        <div class="actions-row">
+            <DxButton Text="Save" Click="SaveNote" />
+            <DxButton Text="Cancel" Click="() => ShowNote = false" />
+        </div>
+    </BodyTemplate>
+</DxPopup>
+
+<DxPopup Width="360px" Visible="@ShowTier" ShowCloseButton="true" VisibleChanged="v => ShowTier = v">
+    <HeaderTemplate>Change tier</HeaderTemplate>
+    <BodyTemplate>
+        <DxSpinEdit @bind-Value="NewTier" Min="1" Max="3" />
+        <div class="actions-row">
+            <DxButton Text="Apply" Click="ApplyTier" />
+            <DxButton Text="Cancel" Click="() => ShowTier = false" />
+        </div>
+    </BodyTemplate>
+</DxPopup>
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+
+    private CaseDetailDto? Detail { get; set; }
+    private List<MessageSummary> DetailMessages { get; set; } = new();
+    private StudentProfile? Profile { get; set; }
+    private bool ShowNote { get; set; }
+    private bool ShowTier { get; set; }
+    private string NoteText { get; set; } = string.Empty;
+    private int NewTier { get; set; }
+    private MessageSummary? SelectedMessage { get; set; }
+    private Client.Models.MessageDetail? SelectedMessageDetail { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Detail = await CasesClient.GetCaseAsync(CaseId);
+        if (Detail?.Case is not null)
+        {
+            // In a full build, load messages per case; use stub for now
+            var msgResult = await MessagesClient.GetMessagesAsync(studentId: Detail.Case.StudentId, take: 100);
+            DetailMessages = msgResult.Items.ToList();
+
+            Profile = await StudentsClient.GetStudentAsync(Detail.Case.StudentId);
+            NewTier = Detail.Case.Tier;
+            if (DetailMessages.Any())
+            {
+                await LoadMessageDetail(DetailMessages.First().MessageId);
+                SelectedMessage = DetailMessages.First();
+            }
+        }
+    }
+
+    private async void CloseCase()
+    {
+        if (Detail != null)
+        {
+            await CasesClient.CloseCaseAsync(Detail.Case.CaseId);
+            Detail = Detail with { Case = Detail.Case with { Status = "CLOSED", ResolvedAtUtc = DateTimeOffset.UtcNow } };
+        }
+    }
+
+    private async void SaveNote()
+    {
+        if (!string.IsNullOrWhiteSpace(NoteText) && Detail != null)
+        {
+            var evt = new CaseTimelineEventDto(Guid.NewGuid(), Detail.Case.CaseId, "NoteAdded", NoteText, DateTimeOffset.UtcNow, "you");
+            await CasesClient.AddNoteAsync(Detail.Case.CaseId, NoteText);
+            Detail = Detail with
+            {
+                Case = Detail.Case with
+                {
+                    TimelineEvents = (Detail.Case.TimelineEvents ?? new List<CaseTimelineEventDto>()).Prepend(evt).ToList()
+                }
+            };
+            NoteText = string.Empty;
+        }
+        ShowNote = false;
+    }
+
+    private async void ApplyTier()
+    {
+        if (Detail != null)
+        {
+            await CasesClient.ChangeTierAsync(Detail.Case.CaseId, NewTier);
+            Detail = Detail with { Case = Detail.Case with { Tier = NewTier } };
+        }
+        ShowTier = false;
+    }
+
+    private async Task LoadMessageDetail(Guid messageId)
+    {
+        SelectedMessageDetail = await MessagesClient.GetMessageAsync(messageId);
+    }
+
+    private async Task OnMessageSelected(MessageSummary? summary)
+    {
+        SelectedMessage = summary;
+        if (summary != null)
+        {
+            await LoadMessageDetail(summary.MessageId);
+        }
+    }
+}

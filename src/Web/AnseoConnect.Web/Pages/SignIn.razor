@@ -1,0 +1,63 @@
+@page "/signin"
+@page "/login"
+@attribute [AllowAnonymous]
+@inject AuthClient AuthClient
+@inject SessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in</PageTitle>
+
+<div class="auth-card">
+    <h2>Sign in</h2>
+    <EditForm Model="@Model" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="auth-row">
+            <label>Username</label>
+            <InputText @bind-Value="Model.Username" />
+        </div>
+        <div class="auth-row">
+            <label>Password</label>
+            <InputText @bind-Value="Model.Password" type="password" />
+        </div>
+        <div class="auth-actions">
+            <DxButton Text="Sign in" ButtonType="ButtonType.Submit" />
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Error))
+        {
+            <p class="error">@Error</p>
+        }
+    </EditForm>
+</div>
+
+@code {
+    private LoginModel Model { get; } = new();
+    private string? Error { get; set; }
+
+    private async Task HandleLogin()
+    {
+        Error = null;
+        var login = await AuthClient.LoginAsync(new LoginRequest(Model.Username, Model.Password));
+        if (login == null)
+        {
+            Error = "Unable to sign in.";
+            return;
+        }
+
+        var whoAmI = await AuthClient.WhoAmIAsync();
+        if (whoAmI == null)
+        {
+            Error = "Unable to load user profile.";
+            return;
+        }
+
+        Session.SetSession(login, whoAmI);
+        Navigation.NavigateTo("/today", true);
+    }
+
+    private sealed class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
