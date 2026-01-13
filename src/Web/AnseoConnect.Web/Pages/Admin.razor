@@ -16,6 +16,10 @@
 <DxButton Text="Open audit log" />
 <DxButton Text="Provision school" />
 <DxButton Text="Manage Entra groups" />
+<DxButton Text="ETB Dashboard" Click="@(() => Navigation.NavigateTo("/etb"))" />
+<DxButton Text="Ingestion Health" Click="@(() => Navigation.NavigateTo("/ingestion-health"))" />
+<DxButton Text="Notifications" Click="@(() => Navigation.NavigateTo("/notifications"))" />
+<DxButton Text="Reconciliation" Click="@(() => Navigation.NavigateTo("/reconciliation"))" />
 
 <h3>Provisioning (stub)</h3>
 <DxFormLayout>
@@ -36,6 +40,7 @@
 <DxMemo Rows="4" @bind-Text="ProvisionLog" ReadOnly="true" />
 
 @code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
     private string TenantName { get; set; } = string.Empty;
     private string SchoolName { get; set; } = string.Empty;
     private string StaffEmail { get; set; } = string.Empty;

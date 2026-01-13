@@ -1,0 +1,71 @@
+@page "/ingestion-health"
+@attribute [Authorize]
+
+<PageTitle>Ingestion Health</PageTitle>
+
+<h3>Ingestion Health</h3>
+<p>Latest ingestion runs per school.</p>
+
+<DxButton Text="Refresh" Click="LoadData" CssClass="mb-2" />
+
+<DxGrid Data="@_items" ShowFilterRow="true" ShowGroupPanel="true" CustomButtonClick="OnCustomButtonClick">
+    <Columns>
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.SchoolName)" Caption="School" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.SyncStatus)" Caption="Sync status" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.SyncErrorCount)" Caption="Errors" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.Status)" Caption="Status" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.StartedAtUtc)" Caption="Started (UTC)" DisplayFormat="g" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.CompletedAtUtc)" Caption="Completed (UTC)" DisplayFormat="g" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.RecordsProcessed)" Caption="Records" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.ErrorCount)" Caption="Errors" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.MismatchCount)" Caption="Mismatches" />
+        <DxGridDataColumn FieldName="@nameof(IngestionHealthDto.Notes)" Caption="Notes" />
+        <DxGridDataColumn Caption="Actions" Width="160px">
+            <CellDisplayTemplate Context="context">
+                @{
+                    var row = (IngestionHealthDto)context.DataItem;
+                }
+                @if (row.SyncStatus.Equals("Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    <DxButton RenderStyle="ButtonRenderStyle.Warning" Text="Resume messaging" Click="() => Resume(row)" />
+                }
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+    </Columns>
+</DxGrid>
+
+@code {
+    [Inject] private IngestionHealthClient Client { get; set; } = default!;
+
+    private IReadOnlyList<IngestionHealthDto> _items = Array.Empty<IngestionHealthDto>();
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _items = await Client.GetHealthAsync();
+    }
+
+    private async Task Resume(IngestionHealthDto dto)
+    {
+        if (_busy) return;
+        if (!dto.SyncStatus.Equals("Failed", StringComparison.OrdinalIgnoreCase)) return;
+        _busy = true;
+        try
+        {
+            var ok = await Client.ResumeAsync(dto.SchoolId);
+            if (ok)
+            {
+                await LoadData();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

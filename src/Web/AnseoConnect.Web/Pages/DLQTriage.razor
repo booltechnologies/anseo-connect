@@ -1,0 +1,35 @@
+@page "/outbox/dlq"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Dead Letter Queue</PageTitle>
+
+<h3>Dead Letter Queue</h3>
+<p>Review exhausted outbox messages and trigger replay once the root cause is addressed.</p>
+
+<div class="alert alert-danger">
+    DLQ triage UI placeholder. Connect to an API that exposes DeadLetterMessage rows, failure reasons, and a replay action.
+</div>
+
+<DxGrid Data="Rows" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="DeadLetterId" Caption="Id" />
+        <DxGridDataColumn FieldName="Type" Caption="Type" />
+        <DxGridDataColumn FieldName="FailureReason" Caption="Failure Reason" />
+        <DxGridDataColumn FieldName="FailedAtUtc" Caption="Failed At (UTC)" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record DeadLetterRow(Guid DeadLetterId, string Type, string FailureReason, DateTimeOffset FailedAtUtc);
+
+    // TODO: replace with API call when available
+    private IReadOnlyList<DeadLetterRow> Rows { get; set; } = Array.Empty<DeadLetterRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<DeadLetterRow>>("api/dlq");
+        Rows = items ?? new List<DeadLetterRow>();
+    }
+}

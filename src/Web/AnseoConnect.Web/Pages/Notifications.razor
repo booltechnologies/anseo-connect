@@ -1,0 +1,32 @@
+@page "/notifications"
+@attribute [Authorize]
+
+<PageTitle>Notifications</PageTitle>
+
+<h3>Notifications</h3>
+<DxButton Text="Refresh" Click="LoadData" CssClass="mb-2" />
+
+<DxGrid Data="@_items" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="@nameof(NotificationDto.Type)" Caption="Type" />
+        <DxGridDataColumn FieldName="@nameof(NotificationDto.Payload)" Caption="Payload" />
+        <DxGridDataColumn FieldName="@nameof(NotificationDto.CreatedAtUtc)" Caption="Created (UTC)" DisplayFormat="g" />
+        <DxGridDataColumn FieldName="@nameof(NotificationDto.ReadAtUtc)" Caption="Read (UTC)" DisplayFormat="g" />
+    </Columns>
+</DxGrid>
+
+@code {
+    [Inject] private NotificationClient Client { get; set; } = default!;
+
+    private IReadOnlyList<NotificationDto> _items = Array.Empty<NotificationDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _items = await Client.GetAsync();
+    }
+}

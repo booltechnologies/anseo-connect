@@ -5,6 +5,7 @@ using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.PolicyRuntime;
 using AnseoConnect.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +88,13 @@ var sendGridFromName = builder.Configuration["SendGrid:FromName"]
     ?? Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME")
     ?? "Anseo Connect";
 
+var twilioAccountSid = builder.Configuration["Twilio:AccountSid"]
+    ?? Environment.GetEnvironmentVariable("TWILIO_ACCOUNT_SID");
+var twilioAuthToken = builder.Configuration["Twilio:AuthToken"]
+    ?? Environment.GetEnvironmentVariable("TWILIO_AUTH_TOKEN");
+var twilioWhatsAppFrom = builder.Configuration["Twilio:WhatsAppFrom"]
+    ?? Environment.GetEnvironmentVariable("TWILIO_WHATSAPP_FROM");
+
 if (!string.IsNullOrWhiteSpace(sendGridApiKey) && !string.IsNullOrWhiteSpace(sendGridFromEmail))
 {
     builder.Services.AddSingleton<SendGridEmailSender>(sp =>
@@ -99,9 +107,56 @@ if (!string.IsNullOrWhiteSpace(sendGridApiKey) && !string.IsNullOrWhiteSpace(sen
 
 // Policy runtime
 builder.Services.AddSingleton<IConsentEvaluator, ConsentEvaluator>();
+builder.Services.AddSingleton<TemplateEngine>();
+builder.Services.AddHttpClient("AzureTranslator", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+var translatorKey = builder.Configuration["Translator:Key"]
+    ?? Environment.GetEnvironmentVariable("AZURE_TRANSLATOR_KEY");
+var translatorRegion = builder.Configuration["Translator:Region"]
+    ?? Environment.GetEnvironmentVariable("AZURE_TRANSLATOR_REGION");
+var translatorEndpoint = builder.Configuration["Translator:Endpoint"]
+    ?? Environment.GetEnvironmentVariable("AZURE_TRANSLATOR_ENDPOINT")
+    ?? "https://api.cognitive.microsofttranslator.com";
+
+if (string.IsNullOrWhiteSpace(translatorKey) || string.IsNullOrWhiteSpace(translatorRegion))
+{
+    throw new InvalidOperationException("Translator configuration missing. Set Translator:Key and Translator:Region or env AZURE_TRANSLATOR_KEY / AZURE_TRANSLATOR_REGION.");
+}
+
+builder.Services.Configure<TranslatorOptions>(opt =>
+{
+    opt.Key = translatorKey!;
+    opt.Region = translatorRegion!;
+    opt.Endpoint = translatorEndpoint;
+    opt.CacheHours = builder.Configuration.GetValue<int?>("Translator:CacheHours") ?? 12;
+});
+
+builder.Services.AddScoped<ITranslationService, AzureTranslatorService>();
+builder.Services.AddScoped<SegmentQueryEngine>();
+
+// Outbox
+builder.Services.AddScoped<IOutboxDispatcher, OutboxDispatcher>();
+builder.Services.AddHostedService<OutboxDispatcherService>();
+builder.Services.AddHostedService<CampaignRunner>();
+
+// Notifications
+builder.Services.AddSingleton<IInAppNotifier, SignalRNotifier>();
 
 // Message service
 builder.Services.AddScoped<MessageService>();
+if (!string.IsNullOrWhiteSpace(twilioAccountSid) &&
+    !string.IsNullOrWhiteSpace(twilioAuthToken) &&
+    !string.IsNullOrWhiteSpace(twilioWhatsAppFrom))
+{
+    builder.Services.AddSingleton<TwilioWhatsAppSender>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<TwilioWhatsAppSender>>();
+        return new TwilioWhatsAppSender(twilioAccountSid, twilioAuthToken, twilioWhatsAppFrom, logger);
+    });
+}
 
 // Register consumer as hosted service
 builder.Services.AddHostedService<SendMessageRequestedConsumer>(sp =>

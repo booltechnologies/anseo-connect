@@ -1,0 +1,81 @@
+@page "/guardian/preferences"
+@attribute [Authorize(Roles = "Guardian")]
+@inject HttpClient Http
+
+<PageTitle>Preferences</PageTitle>
+
+<h3>Contact Preferences</h3>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Preferred Language">
+        <DxTextBox @bind-Text="PreferredLanguage" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Preferred Channels (JSON)">
+        <DxMemo @bind-Text="PreferredChannels" Rows="3" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Quiet Hours Start (HH:mm)">
+        <DxTextBox @bind-Text="QuietHoursStart" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Quiet Hours End (HH:mm)">
+        <DxTextBox @bind-Text="QuietHoursEnd" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Timezone">
+        <DxTextBox @bind-Text="QuietHoursTimezone" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<DxButton Text="Save Preferences" Click="SavePreferences" />
+
+@code {
+    private string PreferredLanguage { get; set; } = "en";
+    private string PreferredChannels { get; set; } = "[\"SMS\",\"EMAIL\"]";
+    private string QuietHoursStart { get; set; } = "21:00";
+    private string QuietHoursEnd { get; set; } = "07:00";
+    private string QuietHoursTimezone { get; set; } = "UTC";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resp = await Http.GetFromJsonAsync<PreferenceDto>("api/guardian/preferences");
+        if (resp != null)
+        {
+            PreferredLanguage = resp.PreferredLanguage ?? "en";
+            PreferredChannels = resp.PreferredChannels ?? "[\"SMS\",\"EMAIL\"]";
+            if (!string.IsNullOrWhiteSpace(resp.QuietHoursJson))
+            {
+                TryParseQuietHours(resp.QuietHoursJson);
+            }
+        }
+    }
+
+    private async Task SavePreferences()
+    {
+        var payload = new
+        {
+            PreferredLanguage,
+            PreferredChannelsJson = PreferredChannels,
+            QuietHoursJson = BuildQuietHoursJson()
+        };
+        await Http.PutAsJsonAsync("api/guardian/preferences", payload);
+    }
+
+    private string BuildQuietHoursJson() =>
+        $"{{\"start\":\"{QuietHoursStart}\",\"end\":\"{QuietHoursEnd}\",\"timezone\":\"{QuietHoursTimezone}\"}}";
+
+    private void TryParseQuietHours(string quietHoursJson)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(quietHoursJson);
+            var root = doc.RootElement;
+            QuietHoursStart = root.TryGetProperty("start", out var start) ? start.GetString() ?? QuietHoursStart : QuietHoursStart;
+            QuietHoursEnd = root.TryGetProperty("end", out var end) ? end.GetString() ?? QuietHoursEnd : QuietHoursEnd;
+            QuietHoursTimezone = root.TryGetProperty("timezone", out var tz) ? tz.GetString() ?? QuietHoursTimezone : QuietHoursTimezone;
+        }
+        catch
+        {
+            // ignore parse errors and keep defaults
+        }
+    }
+
+    private sealed record PreferenceDto(string? PreferredLanguage, string? PreferredChannels, string? QuietHoursJson);
+}

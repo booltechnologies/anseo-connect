@@ -2,6 +2,7 @@ using AnseoConnect.Contracts.DTOs;
 using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace AnseoConnect.ApiGateway.Services;
 
@@ -180,5 +181,70 @@ public sealed class CaseQueryService
             LastUpdatedUtc: consentState.LastUpdatedUtc,
             Source: consentState.Source
         );
+    }
+
+    /// <summary>
+    /// Marks a checklist item complete for safeguarding alert or work task linked to the case.
+    /// </summary>
+    public async Task<bool> CompleteChecklistItemAsync(
+        Guid caseId,
+        string checklistId,
+        string itemId,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _dbContext.SafeguardingAlerts
+            .Where(a => a.CaseId == caseId && a.ChecklistId == checklistId)
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var workTask = alert == null
+            ? await _dbContext.WorkTasks
+                .Where(t => t.CaseId == caseId && t.ChecklistId == checklistId && t.Status == "OPEN")
+                .OrderByDescending(t => t.CreatedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken)
+            : null;
+
+        if (alert == null && workTask == null)
+        {
+            _logger.LogWarning("No checklist found for case {CaseId} checklist {ChecklistId}", caseId, checklistId);
+            return false;
+        }
+
+        var completion = await _dbContext.ChecklistCompletions
+            .FirstOrDefaultAsync(c =>
+                c.CaseId == caseId &&
+                c.ChecklistId == checklistId &&
+                c.ItemId == itemId,
+                cancellationToken);
+
+        if (completion == null)
+        {
+            completion = new ChecklistCompletion
+            {
+                ChecklistCompletionId = Guid.NewGuid(),
+                CaseId = caseId,
+                ChecklistId = checklistId,
+                ItemId = itemId,
+                CompletedAtUtc = DateTimeOffset.UtcNow,
+                CompletedByUserId = null,
+                Notes = notes,
+                AlertId = alert?.AlertId,
+                WorkTaskId = workTask?.WorkTaskId
+            };
+            _dbContext.ChecklistCompletions.Add(completion);
+        }
+        else
+        {
+            completion.CompletedAtUtc = DateTimeOffset.UtcNow;
+            completion.CompletedByUserId = null;
+            completion.Notes = notes;
+            completion.AlertId = alert?.AlertId;
+            completion.WorkTaskId = workTask?.WorkTaskId;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Checklist item {ItemId} completed for case {CaseId} checklist {ChecklistId}", itemId, caseId, checklistId);
+        return true;
     }
 }

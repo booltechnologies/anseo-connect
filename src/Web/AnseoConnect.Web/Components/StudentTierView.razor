@@ -1,0 +1,59 @@
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+@if (_currentTier != null)
+{
+    <DxCard>
+        <DxCardHeader>
+            <DxCardHeaderText>
+                <h5>Current Tier: @_currentTier.Assignment.TierNumber</h5>
+            </DxCardHeaderText>
+        </DxCardHeader>
+        <DxCardBody>
+            <p><strong>Rationale:</strong> @_currentTier.Rationale</p>
+            <p><strong>Assigned:</strong> @_currentTier.Assignment.AssignedAtUtc.ToString("yyyy-MM-dd")</p>
+            <p><strong>Reason:</strong> @_currentTier.Assignment.AssignmentReason</p>
+        </DxCardBody>
+    </DxCard>
+
+    <h6>Tier History</h6>
+    <DxGrid Data="@_history" ShowFilterRow="false" ShowGroupPanel="false">
+        <DxGridDataColumn Field="@nameof(TierAssignmentHistoryDto.ChangedAtUtc)" Caption="Date" />
+        <DxGridDataColumn Field="@nameof(TierAssignmentHistoryDto.ChangeType)" Caption="Change Type" />
+        <DxGridDataColumn Field="@nameof(TierAssignmentHistoryDto.FromTier)" Caption="From Tier" />
+        <DxGridDataColumn Field="@nameof(TierAssignmentHistoryDto.ToTier)" Caption="To Tier" />
+        <DxGridDataColumn Field="@nameof(TierAssignmentHistoryDto.ChangeReason)" Caption="Reason" />
+    </DxGrid>
+}
+else
+{
+    <p>No tier assignment found.</p>
+}
+
+<DxButton Text="Evaluate Tier" Click="@EvaluateTier" />
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+    [Inject] private TierClient Client { get; set; } = default!;
+
+    private TierAssignmentWithRationale? _currentTier;
+    private List<TierAssignmentHistoryDto> _history = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTierData();
+    }
+
+    private async Task LoadTierData()
+    {
+        _currentTier = await Client.GetCurrentTierAsync(CaseId);
+        _history = await Client.GetTierHistoryAsync(CaseId);
+    }
+
+    private async Task EvaluateTier()
+    {
+        var evaluation = await Client.EvaluateTierAsync(CaseId);
+        // Could show evaluation results in a popup or update the display
+        await LoadTierData();
+    }
+}

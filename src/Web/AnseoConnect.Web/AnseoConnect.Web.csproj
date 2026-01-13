@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="DevExpress.Blazor" Version="25.2.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>

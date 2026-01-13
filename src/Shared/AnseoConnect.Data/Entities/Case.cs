@@ -18,6 +18,11 @@ public sealed class Case : SchoolEntity
     public string? ResolvedBy { get; set; }
     public string? ResolutionNotes { get; set; }
 
+    public DateTimeOffset? ReviewDueAtUtc { get; set; }
+    public Guid? AssignedToUserId { get; set; }
+    public DateTimeOffset? EscalatedAtUtc { get; set; }
+    public string? BarrierCodes { get; set; } // JSON array of barrier codes
+
     public Student? Student { get; set; }
     public ICollection<CaseTimelineEvent> TimelineEvents { get; set; } = new List<CaseTimelineEvent>();
     public ICollection<SafeguardingAlert> SafeguardingAlerts { get; set; } = new List<SafeguardingAlert>();

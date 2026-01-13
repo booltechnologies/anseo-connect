@@ -1,0 +1,34 @@
+@page "/threads"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AnseoConnect.Web.Services.NotificationHubClient HubClient
+
+<PageTitle>Threads</PageTitle>
+
+<h3>Conversation Threads</h3>
+
+<DxGrid Data="ThreadItems" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="Student" Caption="Student" />
+        <DxGridDataColumn FieldName="Owner" Caption="Owner" />
+        <DxGridDataColumn FieldName="LastActivity" Caption="Last Activity" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record ThreadRow(Guid ThreadId, Guid StudentId, Guid GuardianId, DateTimeOffset LastActivity);
+    private IReadOnlyList<ThreadRow> ThreadItems { get; set; } = Array.Empty<ThreadRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<ThreadRow>>("api/threads");
+        ThreadItems = items ?? new List<ThreadRow>();
+        await HubClient.EnsureStartedAsync();
+        HubClient.DeliveryUpdated += async () =>
+        {
+            var refreshed = await Http.GetFromJsonAsync<List<ThreadRow>>("api/threads");
+            ThreadItems = refreshed ?? new List<ThreadRow>();
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+}

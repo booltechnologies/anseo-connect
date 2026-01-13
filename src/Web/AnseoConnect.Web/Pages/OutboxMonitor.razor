@@ -1,0 +1,36 @@
+@page "/outbox"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Outbox Monitor</PageTitle>
+
+<h3>Outbox Monitor</h3>
+<p>This page will surface pending, processing, and failed outbox messages with retry/replay actions.</p>
+
+<div class="alert alert-info">
+    Outbox monitoring UI placeholder. Wire this grid to an API that returns OutboxMessage rows with status and next attempt timestamps.
+</div>
+
+<DxGrid Data="Rows" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="OutboxMessageId" Caption="Id" />
+        <DxGridDataColumn FieldName="Type" Caption="Type" />
+        <DxGridDataColumn FieldName="Status" Caption="Status" />
+        <DxGridDataColumn FieldName="AttemptCount" Caption="Attempts" />
+        <DxGridDataColumn FieldName="NextAttemptUtc" Caption="Next Attempt (UTC)" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record OutboxRow(Guid OutboxMessageId, string Type, string Status, int AttemptCount, DateTimeOffset? NextAttemptUtc);
+
+    // TODO: replace with API call when available
+    private IReadOnlyList<OutboxRow> Rows { get; set; } = Array.Empty<OutboxRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<OutboxRow>>("api/outbox");
+        Rows = items ?? new List<OutboxRow>();
+    }
+}

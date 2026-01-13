@@ -1,0 +1,64 @@
+@page "/segments"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Audience Segments</PageTitle>
+
+<h3>Audience Segments</h3>
+
+<div class="alert alert-info">
+    Segment builder placeholder. Implement filters (school, class, attendance risk) and preview counts.
+</div>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Name">
+        <DxTextBox @bind-Text="SegmentName" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Filters">
+        <DxMemo @bind-Text="FilterJson" Rows="4" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<DxButton Text="Save Segment" Click="SaveSegment" />
+
+<DxGrid Data="Segments">
+    <Columns>
+        <DxGridDataColumn FieldName="SegmentId" Caption="Id" />
+        <DxGridDataColumn FieldName="Name" Caption="Name" />
+        <DxGridDataColumn FieldName="CreatedAtUtc" Caption="Created" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private string SegmentName { get; set; } = string.Empty;
+    private string FilterJson { get; set; } = "{ }";
+    private IReadOnlyList<SegmentDto> Segments { get; set; } = Array.Empty<SegmentDto>();
+
+    private sealed record SegmentDto(Guid SegmentId, string Name, DateTimeOffset CreatedAtUtc);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSegments();
+    }
+
+    private async Task LoadSegments()
+    {
+        var items = await Http.GetFromJsonAsync<List<SegmentDto>>("api/segments");
+        Segments = items ?? new List<SegmentDto>();
+    }
+
+    private async Task SaveSegment()
+    {
+        var payload = new
+        {
+            TenantId = Guid.Empty, // server will enforce tenant
+            Name = SegmentName,
+            FilterDefinitionJson = FilterJson,
+            CreatedByUserId = Guid.Empty
+        };
+        await Http.PostAsJsonAsync("api/segments", payload);
+        SegmentName = string.Empty;
+        await LoadSegments();
+    }
+}

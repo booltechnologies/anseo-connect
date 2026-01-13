@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 namespace AnseoConnect.Data.Entities;
@@ -14,9 +14,13 @@ public sealed class School
     public string? WondeDomain { get; set; } // Regional domain (optional, fetched from API if not set)
     public string Timezone { get; set; } = "Europe/Dublin";
     public DateTimeOffset? LastSyncUtc { get; set; } // Last successful sync timestamp for incremental sync
+    public SyncStatus SyncStatus { get; set; } = SyncStatus.Healthy;
+    public int SyncErrorCount { get; set; }
+    public Guid? ETBTrustId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 
     public Tenant? Tenant { get; set; }
+    public ETBTrust? ETBTrust { get; set; }
 
     public ICollection<Student> Students { get; set; } = new List<Student>();
     public ICollection<Guardian> Guardians { get; set; } = new List<Guardian>();

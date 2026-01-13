@@ -59,7 +59,7 @@ else
             <DxGrid Data="DetailMessages"
                     SelectionMode="GridSelectionMode.Single"
                     SelectedDataItem="@SelectedMessage"
-                    SelectedDataItemChanged="OnMessageSelected">
+                    SelectedDataItemChanged="@OnMessageSelected">
                 <Columns>
                     <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
                     <DxGridDataColumn FieldName="@nameof(MessageSummary.Status)" Caption="Status" />
@@ -108,10 +108,17 @@ else
     </BodyTemplate>
 </DxPopup>
 
-<DxPopup Width="360px" Visible="@ShowTier" ShowCloseButton="true" VisibleChanged="v => ShowTier = v">
+<DxPopup Width="360px" Visible="@ShowTier" ShowCloseButton="true" VisibleChanged="v => ShowTier = v" BodyTemplateContext="tierCtx">
     <HeaderTemplate>Change tier</HeaderTemplate>
     <BodyTemplate>
-        <DxSpinEdit @bind-Value="NewTier" Min="1" Max="3" />
+        <DxFormLayout>
+            <DxFormLayoutItem Caption="Tier" Context="tierItem">
+                <DxSpinEdit @bind-Value="NewTier" Min="1" Max="3" />
+            </DxFormLayoutItem>
+            <DxFormLayoutItem Caption="Reason (for Tier 3)" Context="reasonItem">
+                <DxTextBox @bind-Text="TierReason" />
+            </DxFormLayoutItem>
+        </DxFormLayout>
         <div class="actions-row">
             <DxButton Text="Apply" Click="ApplyTier" />
             <DxButton Text="Cancel" Click="() => ShowTier = false" />
@@ -129,6 +136,7 @@ else
     private bool ShowTier { get; set; }
     private string NoteText { get; set; } = string.Empty;
     private int NewTier { get; set; }
+    private string TierReason { get; set; } = string.Empty;
     private MessageSummary? SelectedMessage { get; set; }
     private Client.Models.MessageDetail? SelectedMessageDetail { get; set; }
 
@@ -180,11 +188,14 @@ else
 
     private async void ApplyTier()
     {
-        if (Detail != null)
+        if (Detail == null)
         {
-            await CasesClient.ChangeTierAsync(Detail.Case.CaseId, NewTier);
-            Detail = Detail with { Case = Detail.Case with { Tier = NewTier } };
+            ShowTier = false;
+            return;
         }
+
+        await CasesClient.ChangeTierAsync(Detail.Case.CaseId, NewTier);
+        Detail = Detail with { Case = Detail.Case with { Tier = NewTier } };
         ShowTier = false;
     }
 
@@ -193,12 +204,12 @@ else
         SelectedMessageDetail = await MessagesClient.GetMessageAsync(messageId);
     }
 
-    private async Task OnMessageSelected(MessageSummary? summary)
+    private async Task OnMessageSelected(object? summary)
     {
-        SelectedMessage = summary;
-        if (summary != null)
+        SelectedMessage = summary as MessageSummary;
+        if (SelectedMessage != null)
         {
-            await LoadMessageDetail(summary.MessageId);
+            await LoadMessageDetail(SelectedMessage.MessageId);
         }
     }
 }

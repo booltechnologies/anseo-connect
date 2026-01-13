@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.Client", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.UI.Shared", "src\UI\AnseoConnect.UI.Shared\AnseoConnect.UI.Shared.csproj", "{BADFA80E-B106-53A7-FA7E-CBA71255085E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnseoConnect.IntegrationTests", "tests\AnseoConnect.IntegrationTests\AnseoConnect.IntegrationTests.csproj", "{1C67C3C7-4B5D-4BE2-9FDE-2BEB4FB82930}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +100,10 @@ Global
 		{BADFA80E-B106-53A7-FA7E-CBA71255085E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BADFA80E-B106-53A7-FA7E-CBA71255085E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BADFA80E-B106-53A7-FA7E-CBA71255085E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C67C3C7-4B5D-4BE2-9FDE-2BEB4FB82930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C67C3C7-4B5D-4BE2-9FDE-2BEB4FB82930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C67C3C7-4B5D-4BE2-9FDE-2BEB4FB82930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C67C3C7-4B5D-4BE2-9FDE-2BEB4FB82930}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

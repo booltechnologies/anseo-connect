@@ -1,4 +1,5 @@
 using AnseoConnect.Client.Models;
+using AnseoConnect.Contracts.DTOs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -6,8 +7,8 @@ namespace AnseoConnect.Client;
 
 public sealed class ConsentClient : ApiClientBase
 {
-    public ConsentClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<ConsentClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public ConsentClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<ConsentClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 

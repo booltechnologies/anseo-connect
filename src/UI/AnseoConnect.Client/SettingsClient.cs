@@ -6,50 +6,36 @@ namespace AnseoConnect.Client;
 
 public sealed class SettingsClient : ApiClientBase
 {
-    public SettingsClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<SettingsClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public SettingsClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<SettingsClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 
     public async Task<SchoolSettingsDto> GetSchoolSettingsAsync(CancellationToken cancellationToken = default)
     {
         var result = await GetOrDefaultAsync<SchoolSettingsDto>("api/settings/school", cancellationToken);
-        return result ?? SampleData.SchoolSettings;
+        return result ?? new SchoolSettingsDto();
     }
 
     public async Task<bool> UpdateSchoolSettingsAsync(SchoolSettingsDto dto, CancellationToken cancellationToken = default)
     {
-        var ok = await PutOrFalseAsync("api/settings/school", dto, cancellationToken);
-        if (!ok)
-        {
-            SampleData.UpdateSchoolSettings(dto);
-            return true;
-        }
-
-        return ok;
+        return await PutOrFalseAsync("api/settings/school", dto, cancellationToken);
     }
 
     public async Task<IReadOnlyList<IntegrationStatusDto>> GetIntegrationsAsync(CancellationToken cancellationToken = default)
     {
         var result = await GetOrDefaultAsync<List<IntegrationStatusDto>>("api/integrations/status", cancellationToken);
-        return result ?? SampleData.Integrations;
+        return result ?? new List<IntegrationStatusDto>();
     }
 
     public async Task<PolicyPackAssignmentDto> GetPolicyPackAsync(CancellationToken cancellationToken = default)
     {
         var result = await GetOrDefaultAsync<PolicyPackAssignmentDto>("api/settings/policy", cancellationToken);
-        return result ?? SampleData.PolicyPack;
+        return result ?? new PolicyPackAssignmentDto(string.Empty, string.Empty, null);
     }
 
     public async Task<bool> UpdatePolicyPackAsync(PolicyPackAssignmentDto dto, CancellationToken cancellationToken = default)
     {
-        var ok = await PutOrFalseAsync("api/settings/policy", dto, cancellationToken);
-        if (!ok)
-        {
-            SampleData.UpdatePolicyPack(dto);
-            return true;
-        }
-
-        return ok;
+        return await PutOrFalseAsync("api/settings/policy", dto, cancellationToken);
     }
 }

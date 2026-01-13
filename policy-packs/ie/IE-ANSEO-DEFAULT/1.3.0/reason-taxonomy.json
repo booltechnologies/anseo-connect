@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "countryDefaults": {
+    "IE": {
+      "scheme": "TUSLA_TESS",
+      "version": "2026",
+      "codes": [
+        { "code": "ILL", "label": "Illness", "type": "AUTHORISED" },
+        { "code": "MED", "label": "Medical/Dental appointment", "type": "AUTHORISED" },
+        { "code": "FAM", "label": "Family reasons", "type": "AUTHORISED" },
+        { "code": "REL", "label": "Religious observance", "type": "AUTHORISED" },
+        { "code": "TRA", "label": "Traveller (traditional activities)", "type": "AUTHORISED" },
+        { "code": "SUS", "label": "Suspension", "type": "AUTHORISED" },
+        { "code": "EXP", "label": "Expulsion", "type": "AUTHORISED" },
+        { "code": "UNE", "label": "Unexplained absence", "type": "UNAUTHORISED" },
+        { "code": "TRU", "label": "Truancy", "type": "UNAUTHORISED" },
+        { "code": "LAT", "label": "Late arrival (after roll)", "type": "UNAUTHORISED" },
+        { "code": "HOL", "label": "Holiday during term", "type": "UNAUTHORISED" },
+        { "code": "OTH", "label": "Other", "type": "OTHER" }
+      ]
+    }
+  },
+  "schoolOverrides": {
+    "allowCustomCodes": false,
+    "allowRelabel": true,
+    "allowDisable": true
+  }
+}

@@ -11,7 +11,6 @@ public static class DependencyInjection
     {
         services.Configure(configureOptions ?? (_ => { }));
 
-        services.AddScoped<SampleDataProvider>();
         services.AddScoped<BearerTokenHandler>();
 
         services.AddHttpClient(HttpClientName, (sp, client) =>
@@ -28,6 +27,17 @@ public static class DependencyInjection
         services.AddScoped<SettingsClient>();
         services.AddScoped<SafeguardingClient>();
         services.AddScoped<ConsentClient>();
+        services.AddScoped<IngestionHealthClient>();
+        services.AddScoped<NotificationClient>();
+        services.AddScoped<InterventionsClient>();
+        services.AddScoped<MeetingsClient>();
+        services.AddScoped<LettersClient>();
+        services.AddScoped<AnalyticsClient>();
+        services.AddScoped<ReportsClient>();
+        services.AddScoped<PlaybooksClient>();
+        services.AddScoped<TelemetryClient>();
+        services.AddScoped<TierClient>();
+        services.AddScoped<EvidenceClient>();
 
         return services;
     }

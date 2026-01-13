@@ -4,14 +4,14 @@
 @inject NavigationManager Navigation
 @inject ConsentClient ConsentClient
 @inject StudentsClient StudentsClient
-@inject SampleDataProvider SampleData
+@inject SettingsClient SettingsClient
 
 <PageTitle>Messages</PageTitle>
 
 <div class="filters">
     <DxComboBox @bind-Value="ChannelFilter" Data="@Channels" NullText="Channel (all)" />
     <DxComboBox @bind-Value="StatusFilter" Data="@Statuses" NullText="Status (all)" />
-    <DxCheckBox @bind-Value="FailedOnly" Text="Failed only" />
+    <DxCheckBox TValue="bool" @bind-Checked="FailedOnly" Text="Failed only" />
     <DxDateEdit @bind-Date="StartDate" NullText="From date" />
     <DxDateEdit @bind-Date="EndDate" NullText="To date" />
     <DxButton Text="Apply filters" Click="ApplyFilters" />
@@ -28,7 +28,7 @@ else
             FilterRowVisible="true"
             SelectionMode="GridSelectionMode.Single"
             SelectedDataItem="@Selected"
-            SelectedDataItemChanged="OnSelectedChanged">
+            SelectedDataItemChanged="@OnSelectedChanged">
         <Columns>
             <DxGridDataColumn FieldName="@nameof(MessageSummary.StudentName)" Caption="Student" />
             <DxGridDataColumn FieldName="@nameof(MessageSummary.Channel)" Caption="Channel" />
@@ -96,7 +96,7 @@ else
                      StudentId="@ComposeStudentId"
                      GuardianOptions="@ComposeGuardians"
                      ConsentStatus="@ComposeConsent"
-                     TemplateOptions="@SampleData.Templates"
+                     TranslationReviewRequired="@TranslationReviewRequired"
                      OnSend="SendMessage" />
 
 @code {
@@ -119,9 +119,12 @@ else
     private int PageIndex { get; set; }
     private int PageSize { get; set; } = 20;
     private int TotalCount { get; set; }
+    private bool TranslationReviewRequired { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        var settings = await SettingsClient.GetSchoolSettingsAsync();
+        TranslationReviewRequired = settings.TranslationReviewRequired;
         await LoadMessages();
     }
 
@@ -137,9 +140,9 @@ else
         _ = LoadMessages();
     }
 
-    private Task OnSelectedChanged(MessageSummary? summary)
+    private Task OnSelectedChanged(object? summary)
     {
-        Selected = summary;
+        Selected = summary as MessageSummary;
         return Task.CompletedTask;
     }
 
@@ -151,6 +154,7 @@ else
 
     private async void ShowCompose(Guid studentId)
     {
+        TranslationReviewRequired = (await SettingsClient.GetSchoolSettingsAsync()).TranslationReviewRequired;
         ComposeStudentId = studentId;
         ComposeConsent = null;
         ComposeGuardians = Array.Empty<GuardianContact>();
@@ -176,8 +180,7 @@ else
         }
         else
         {
-            // fallback guardians for compose when no context
-            ComposeGuardians = SampleData.GuardiansByStudent(Guid.Empty);
+            ComposeGuardians = Array.Empty<GuardianContact>();
             ComposeConsent = new ConsentStatusDto(Guid.Empty, "Guardian", "SMS", "UNKNOWN", DateTimeOffset.UtcNow, "SYSTEM");
         }
 

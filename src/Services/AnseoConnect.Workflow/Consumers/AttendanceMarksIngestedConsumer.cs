@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using TaskEntity = AnseoConnect.Data.Entities.WorkTask;
 
 namespace AnseoConnect.Workflow.Consumers;
 
@@ -65,7 +66,13 @@ public sealed class AttendanceMarksIngestedConsumer : ServiceBusMessageConsumer
                 var absenceDetectionService = scope.ServiceProvider.GetRequiredService<AbsenceDetectionService>();
                 var caseService = scope.ServiceProvider.GetRequiredService<CaseService>();
                 var safeguardingService = scope.ServiceProvider.GetRequiredService<SafeguardingService>();
+                var normalizationService = scope.ServiceProvider.GetRequiredService<AttendanceNormalizationService>();
                 var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+
+                await normalizationService.NormalizeAsync(
+                    schoolId.Value,
+                    payload.Date,
+                    cancellationToken);
 
                 // Detect unexplained absences for the ingested date
                 var unexplainedAbsences = await absenceDetectionService.DetectUnexplainedAbsencesAsync(

@@ -6,6 +6,7 @@ using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AnseoConnect.ApiGateway.Services;
 
 namespace AnseoConnect.ApiGateway.Controllers;
 
@@ -23,17 +24,20 @@ public sealed class SendmodeWebhookController : ControllerBase
     private readonly IMessageBus _messageBus;
     private readonly ILogger<SendmodeWebhookController> _logger;
     private readonly ITenantContext _tenantContext;
+    private readonly NotificationBroadcaster _broadcaster;
 
     public SendmodeWebhookController(
         AnseoConnectDbContext dbContext,
         IMessageBus messageBus,
         ILogger<SendmodeWebhookController> logger,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        NotificationBroadcaster broadcaster)
     {
         _dbContext = dbContext;
         _messageBus = messageBus;
         _logger = logger;
         _tenantContext = tenantContext;
+        _broadcaster = broadcaster;
     }
 
     /// <summary>
@@ -123,6 +127,21 @@ public sealed class SendmodeWebhookController : ControllerBase
                     consentState.UpdatedBy = "SENDMODE_WEBHOOK";
                 }
 
+                var consentRecord = new ConsentRecord
+                {
+                    ConsentRecordId = Guid.NewGuid(),
+                    GuardianId = guardian.GuardianId,
+                    TenantId = guardian.TenantId,
+                    SchoolId = guardian.SchoolId,
+                    Channel = channel,
+                    Action = "OPTED_OUT",
+                    Source = "GUARDIAN_REPLY",
+                    Notes = $"Keyword: {command}",
+                    CapturedAtUtc = DateTimeOffset.UtcNow,
+                    CapturedByUserId = null
+                };
+                _dbContext.ConsentRecords.Add(consentRecord);
+
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 // Publish opt-out event
@@ -165,6 +184,26 @@ public sealed class SendmodeWebhookController : ControllerBase
             );
 
             await _messageBus.PublishAsync(replyEnvelope, cancellationToken);
+
+            // Record engagement reply
+            var engagement = new EngagementEvent
+            {
+                EventId = Guid.NewGuid(),
+                TenantId = guardian.TenantId,
+                MessageId = recentMessage?.MessageId ?? Guid.Empty,
+                GuardianId = guardian.GuardianId,
+                EventType = "REPLIED",
+                OccurredAtUtc = DateTimeOffset.UtcNow
+            };
+            _dbContext.EngagementEvents.Add(engagement);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            await _broadcaster.BroadcastEngagementAsync(guardian.TenantId, new
+            {
+                guardianId = guardian.GuardianId,
+                channel = channel,
+                eventType = "REPLIED"
+            }, cancellationToken);
 
             // Return "True" as plain text (Sendmode requirement)
             return Content("True", "text/plain");

@@ -1,0 +1,70 @@
+@page "/attendance-dashboard"
+@using DevExpress.Blazor
+@using Microsoft.AspNetCore.Components.Authorization
+@using AnseoConnect.Client
+@using System.Linq
+
+<PageTitle>Attendance Dashboard</PageTitle>
+
+<h3>Attendance Dashboard</h3>
+
+<DxChart Data="@_items" Width="100%" Height="420px">
+    <DxChartTitle Text="Attendance Rate (Last 30 Days)" />
+    <DxChartValueAxis />
+    <DxChartLineSeries T="DailyMetric" TValue="decimal" TArgument="string"
+                       ValueField="@((DailyMetric i) => i.AttendanceRate)"
+                       ArgumentField="@((DailyMetric i) => i.Label)" />
+</DxChart>
+
+<DxChart Data="@_items" Width="100%" Height="420px" CssClass="mt-4">
+    <DxChartTitle Text="Intervention Funnel" />
+    <DxChartValueAxis />
+    <DxChartBarSeries T="DailyMetric" TValue="int" TArgument="string"
+                      ValueField="@((DailyMetric i) => i.Letter1Sent)"
+                      ArgumentField="@((DailyMetric i) => i.Label)"
+                      Name="Letter 1" />
+    <DxChartBarSeries T="DailyMetric" TValue="int" TArgument="string"
+                      ValueField="@((DailyMetric i) => i.Letter2Sent)"
+                      ArgumentField="@((DailyMetric i) => i.Label)"
+                      Name="Letter 2" />
+    <DxChartBarSeries T="DailyMetric" TValue="int" TArgument="string"
+                      ValueField="@((DailyMetric i) => i.MeetingsHeld)"
+                      ArgumentField="@((DailyMetric i) => i.Label)"
+                      Name="Meetings Held" />
+</DxChart>
+
+@code {
+    [Inject] private AnalyticsClient Client { get; set; } = default!;
+    [CascadingParameter] public Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<DailyMetric> _items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var schoolId = await GetSchoolIdAsync();
+        if (schoolId == Guid.Empty)
+        {
+            return;
+        }
+
+        var trend = await Client.GetInterventionTrendAsync(schoolId, 30);
+        if (trend?.Points != null)
+        {
+            _items = trend.Points
+                .OrderBy(p => p.Date)
+                .Select(p => new DailyMetric(p.Date.ToString("MM/dd"), p.AttendanceRate, p.Letter1Sent, p.Letter2Sent, p.MeetingsHeld))
+                .ToList();
+        }
+    }
+
+    private async Task<Guid> GetSchoolIdAsync()
+    {
+        if (AuthState == null) return Guid.Empty;
+        var auth = await AuthState;
+        var claim = auth.User.FindFirst("school_id")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+    }
+
+    private sealed record DailyMetric(string Label, decimal AttendanceRate, int Letter1Sent, int Letter2Sent, int MeetingsHeld);
+}
+

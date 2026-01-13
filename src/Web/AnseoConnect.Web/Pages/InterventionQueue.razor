@@ -1,0 +1,67 @@
+@page "/intervention-queue"
+@using DevExpress.Blazor
+@using Microsoft.AspNetCore.Components.Authorization
+@using AnseoConnect.Client
+@using System.Threading.Tasks
+
+<PageTitle>Intervention Queue</PageTitle>
+
+<h3>Today's Intervention Queue</h3>
+
+<DxGrid Data="@_items" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(EligibleStudentDto.StudentName)" Caption="Student" />
+    <DxGridDataColumn Field="@nameof(EligibleStudentDto.YearGroup)" Caption="Year" />
+    <DxGridDataColumn Field="@nameof(EligibleStudentDto.RuleSetName)" Caption="Rule Set" />
+    <DxGridDataColumn Caption="Triggered">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (EligibleStudentDto)context.DataItem;
+            }
+            @string.Join(", ", row.TriggeredConditions ?? Array.Empty<string>())
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+    <DxGridDataColumn Caption="Actions">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (EligibleStudentDto)context.DataItem;
+            }
+            <DxButton Text="Start Intervention" Click="@(() => StartInterventionAsync(row))" />
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+</DxGrid>
+
+@code {
+    [Inject] private InterventionsClient Client { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [CascadingParameter] public Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<EligibleStudentDto> _items = new();
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQueue();
+    }
+
+    private async Task LoadQueue()
+    {
+        var data = await Client.GetQueueAsync();
+        _items = data ?? new List<EligibleStudentDto>();
+        StateHasChanged();
+    }
+
+    private async Task StartInterventionAsync(EligibleStudentDto row)
+    {
+        if (_busy) return;
+        _busy = true;
+
+        var instance = await Client.CreateInstanceAsync(row.StudentId, row.RuleSetId);
+        if (instance != null)
+        {
+            Navigation.NavigateTo($"/interventions/{instance.InstanceId}");
+        }
+
+        _busy = false;
+    }
+}
+

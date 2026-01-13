@@ -1,0 +1,48 @@
+@page "/reconciliation"
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>Attendance Reconciliation</PageTitle>
+
+<h3>Attendance Reconciliation</h3>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Date">
+        <DxDateEdit @bind-Date="SelectedDate" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem>
+        <DxButton Text="Run" Click="Run" CssClass="mb-2" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+@if (_result is null)
+{
+    <p>Select a date and run reconciliation.</p>
+}
+else
+{
+    <p>Wonde marks: @_result.WonDeCount · Other marks: @_result.OtherCount · Mismatches: @_result.MismatchCount</p>
+    <DxGrid Data="@_result.Mismatches" ShowFilterRow="true">
+        <Columns>
+            <DxGridDataColumn FieldName="@nameof(ReconciliationMismatch.StudentId)" Caption="Student" />
+            <DxGridDataColumn FieldName="@nameof(ReconciliationMismatch.Session)" Caption="Session" />
+            <DxGridDataColumn FieldName="@nameof(ReconciliationMismatch.ExpectedStatus)" Caption="Expected (Wonde)" />
+            <DxGridDataColumn FieldName="@nameof(ReconciliationMismatch.ActualStatus)" Caption="Actual (Other)" />
+            <DxGridDataColumn FieldName="@nameof(ReconciliationMismatch.Source)" Caption="Source" />
+        </Columns>
+    </DxGrid>
+}
+
+@code {
+    private DateTime SelectedDate { get; set; } = DateTime.UtcNow;
+    private ReconciliationResult? _result;
+
+    private async Task Run()
+    {
+        var dateOnly = DateOnly.FromDateTime(SelectedDate);
+        _result = await Http.GetFromJsonAsync<ReconciliationResult>($"api/reconciliation/{dateOnly:yyyy-MM-dd}");
+    }
+
+    private sealed record ReconciliationMismatch(Guid StudentId, string Session, string ExpectedStatus, string ActualStatus, string Source);
+    private sealed record ReconciliationResult(DateOnly Date, int WonDeCount, int OtherCount, int MismatchCount, IReadOnlyList<ReconciliationMismatch> Mismatches);
+}

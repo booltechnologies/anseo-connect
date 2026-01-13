@@ -9,12 +9,16 @@ param(
     [string]$ServiceBusNamespace,
     
     [Parameter(Mandatory=$false)]
-    [string]$Location = "northeurope"
+    [string]$Location = "northeurope",
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$CreateNamespaceIfMissing
 )
 
 Write-Host "Creating Service Bus topics and subscriptions..." -ForegroundColor Green
 Write-Host "Resource Group: $ResourceGroupName" -ForegroundColor Cyan
 Write-Host "Namespace: $ServiceBusNamespace" -ForegroundColor Cyan
+Write-Host "Location: $Location" -ForegroundColor Cyan
 Write-Host ""
 
 # Verify namespace exists
@@ -22,12 +26,51 @@ Write-Host "Verifying namespace exists..." -ForegroundColor Yellow
 $namespaceExists = az servicebus namespace show --resource-group $ResourceGroupName --name $ServiceBusNamespace --query "name" --output tsv 2>$null
 
 if (-not $namespaceExists) {
-    Write-Host "ERROR: Namespace '$ServiceBusNamespace' not found in resource group '$ResourceGroupName'" -ForegroundColor Red
-    Write-Host "Please create the namespace first or check your resource group and namespace names." -ForegroundColor Yellow
-    exit 1
+    Write-Host "Namespace '$ServiceBusNamespace' not found in resource group '$ResourceGroupName'" -ForegroundColor Yellow
+    
+    if ($CreateNamespaceIfMissing) {
+        Write-Host "Creating namespace '$ServiceBusNamespace'..." -ForegroundColor Yellow
+        
+        # Verify resource group exists
+        $rgExists = az group show --name $ResourceGroupName --query "name" --output tsv 2>$null
+        if (-not $rgExists) {
+            Write-Host "ERROR: Resource group '$ResourceGroupName' not found." -ForegroundColor Red
+            Write-Host "Please create the resource group first:" -ForegroundColor Yellow
+            Write-Host "  az group create --name $ResourceGroupName --location $Location" -ForegroundColor Gray
+            exit 1
+        }
+        
+        # Create the namespace
+        az servicebus namespace create `
+            --resource-group $ResourceGroupName `
+            --name $ServiceBusNamespace `
+            --location $Location `
+            --sku Standard `
+            --output none
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Namespace '$ServiceBusNamespace' created successfully" -ForegroundColor Green
+            Write-Host "  Waiting for namespace to be ready..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
+        } else {
+            Write-Host "✗ Failed to create namespace '$ServiceBusNamespace'" -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "ERROR: Namespace '$ServiceBusNamespace' not found in resource group '$ResourceGroupName'" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Options:" -ForegroundColor Yellow
+        Write-Host "  1. Create the namespace manually:" -ForegroundColor Yellow
+        Write-Host "     az servicebus namespace create --resource-group $ResourceGroupName --name $ServiceBusNamespace --location $Location --sku Standard" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  2. Or run this script with -CreateNamespaceIfMissing to auto-create:" -ForegroundColor Yellow
+        Write-Host "     .\scripts\create-servicebus-topics.ps1 -ResourceGroupName $ResourceGroupName -ServiceBusNamespace $ServiceBusNamespace -CreateNamespaceIfMissing" -ForegroundColor Gray
+        exit 1
+    }
+} else {
+    Write-Host "✓ Namespace found" -ForegroundColor Green
 }
 
-Write-Host "✓ Namespace found" -ForegroundColor Green
 Write-Host ""
 
 # Create topics
@@ -88,8 +131,6 @@ if ($existing) {
         --name $subName `
         --lock-duration PT1M `
         --max-delivery-count 10 `
-        --dead-letter-on-message-expiration true `
-        --dead-letter-on-filter-evaluation-exceptions true `
         --output none
     
     if ($LASTEXITCODE -eq 0) {
@@ -126,8 +167,6 @@ foreach ($subName in $subscriptions) {
             --name $subName `
             --lock-duration PT1M `
             --max-delivery-count 10 `
-            --dead-letter-on-message-expiration true `
-            --dead-letter-on-filter-evaluation-exceptions true `
             --output none
         
         if ($LASTEXITCODE -eq 0) {

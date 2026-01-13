@@ -1,0 +1,63 @@
+@page "/guardian/thread/{ThreadId:guid}"
+@attribute [Authorize(Roles = "Guardian")]
+@inject HttpClient Http
+@inject AnseoConnect.Web.Services.NotificationHubClient HubClient
+
+<PageTitle>Thread Detail</PageTitle>
+
+<h3>Thread</h3>
+<p>Thread ID: @ThreadId</p>
+
+<ul>
+    @if (Messages != null)
+    {
+        foreach (var msg in Messages)
+        {
+            <li>@msg.Direction: @msg.Body (@msg.CreatedAtUtc)</li>
+        }
+    }
+</ul>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Reply">
+        <DxMemo @bind-Text="ReplyText" Rows="3" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+<DxButton Text="Send Reply" Click="SendReply" />
+
+@code {
+    [Parameter] public Guid ThreadId { get; set; }
+    private record MessageRow(Guid MessageId, string Body, DateTimeOffset CreatedAtUtc, string Direction, string Status);
+    private IReadOnlyList<MessageRow> Messages { get; set; } = Array.Empty<MessageRow>();
+    private string ReplyText { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+        await HubClient.EnsureStartedAsync();
+        HubClient.DeliveryUpdated += async () =>
+        {
+            await LoadMessages();
+            await InvokeAsync(StateHasChanged);
+        };
+        HubClient.EngagementUpdated += async () =>
+        {
+            await LoadMessages();
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private async Task LoadMessages()
+    {
+        var items = await Http.GetFromJsonAsync<List<MessageRow>>($"api/guardian/threads/{ThreadId}/messages");
+        Messages = items ?? new List<MessageRow>();
+    }
+
+    private async Task SendReply()
+    {
+        if (string.IsNullOrWhiteSpace(ReplyText)) return;
+        await Http.PostAsJsonAsync($"api/guardian/threads/{ThreadId}/reply", new { Text = ReplyText });
+        ReplyText = string.Empty;
+        await LoadMessages();
+    }
+}

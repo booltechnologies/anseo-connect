@@ -1,0 +1,87 @@
+@page "/threads/{ThreadId:guid}"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AnseoConnect.Web.Services.NotificationHubClient HubClient
+
+<PageTitle>Thread Detail</PageTitle>
+
+<h3>Thread Detail</h3>
+<p>Thread: @ThreadId</p>
+
+<ul>
+    @if (Messages != null)
+    {
+        foreach (var msg in Messages)
+        {
+            <li>@msg.Direction: @msg.Body (@msg.CreatedAtUtc)</li>
+        }
+    }
+</ul>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Reply">
+        <DxMemo @bind-Text="ReplyText" Rows="4" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+<DxButton Text="Send" Click="SendReply" />
+
+@code {
+    [Parameter] public Guid ThreadId { get; set; }
+    private record MessageRow(Guid MessageId, string Body, DateTimeOffset CreatedAtUtc, string Direction, string Status);
+    private IReadOnlyList<MessageRow> Messages { get; set; } = Array.Empty<MessageRow>();
+    private string ReplyText { get; set; } = string.Empty;
+    private Guid GuardianId { get; set; }
+    private Guid StudentId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+        await HubClient.EnsureStartedAsync();
+        HubClient.DeliveryUpdated += async () =>
+        {
+            await LoadMessages();
+            await InvokeAsync(StateHasChanged);
+        };
+        HubClient.EngagementUpdated += async () =>
+        {
+            await LoadMessages();
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private async Task LoadMessages()
+    {
+        var items = await Http.GetFromJsonAsync<List<MessageRow>>($"api/threads/{ThreadId}/messages");
+        Messages = items ?? new List<MessageRow>();
+        var latest = Messages.LastOrDefault();
+        if (latest != null)
+        {
+            // guardian and student IDs are not included in current DTO; fetch thread list for metadata
+            var threads = await Http.GetFromJsonAsync<List<ThreadDto>>("api/threads");
+            var info = threads?.FirstOrDefault(t => t.ThreadId == ThreadId);
+            GuardianId = info?.GuardianId ?? Guid.Empty;
+            StudentId = info?.StudentId ?? Guid.Empty;
+        }
+    }
+
+    private async Task SendReply()
+    {
+        if (string.IsNullOrWhiteSpace(ReplyText)) return;
+        var payload = new
+        {
+            GuardianId,
+            StudentId,
+            Channel = "SMS",
+            TemplateId = "CUSTOM",
+            TemplateData = new Dictionary<string, string>
+            {
+                { "Body", ReplyText }
+            }
+        };
+        await Http.PostAsJsonAsync($"api/threads/{ThreadId}/reply", payload);
+        ReplyText = string.Empty;
+        await LoadMessages();
+    }
+
+    private record ThreadDto(Guid ThreadId, Guid StudentId, Guid GuardianId, DateTimeOffset LastActivityUtc);
+}

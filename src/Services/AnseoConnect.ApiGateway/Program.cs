@@ -1,21 +1,30 @@
 using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using AnseoConnect.Data.MultiTenancy;
+using AnseoConnect.Data.Services;
 using AnseoConnect.ApiGateway.Middleware;
 using AnseoConnect.ApiGateway.Services;
 using AnseoConnect.Shared;
+using AnseoConnect.Workflow.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
+using System.Linq;
 using System.Text;
+using AnseoConnect.ApiGateway.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var authSchemes = new[] { "LocalBearer", JwtBearerDefaults.AuthenticationScheme };
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 // Database configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -43,6 +52,51 @@ builder.Services.AddScoped<ITenantContext, TenantContext>();
 
 // Query services
 builder.Services.AddScoped<CaseQueryService>();
+builder.Services.AddScoped<ReportingService>();
+builder.Services.AddScoped<ReasonTaxonomySyncService>();
+builder.Services.AddScoped<InterventionRuleEngine>();
+builder.Services.AddScoped<LetterGenerationService>();
+builder.Services.AddScoped<MeetingService>();
+builder.Services.AddScoped<InterventionAnalyticsService>();
+builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
+builder.Services.AddScoped<RoiCalculatorService>();
+builder.Services.AddScoped<TierEvaluator>();
+builder.Services.AddScoped<MtssTierService>();
+builder.Services.AddScoped<EvidencePackIntegrityService>();
+builder.Services.AddScoped<EvidencePackBuilder>();
+builder.Services.AddScoped<CaseService>();
+builder.Services.AddSingleton<NotificationBroadcaster>();
+// Email/SMS senders for guardian auth
+var sendGridKey = builder.Configuration["SendGrid:ApiKey"] ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+var sendGridFromEmail = builder.Configuration["SendGrid:FromEmail"] ?? Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL");
+var sendGridFromName = builder.Configuration["SendGrid:FromName"] ?? Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME") ?? "Anseo Connect";
+if (!string.IsNullOrWhiteSpace(sendGridKey) && !string.IsNullOrWhiteSpace(sendGridFromEmail))
+{
+    builder.Services.AddSingleton<IEmailSender>(sp =>
+        new EmailSender(sendGridKey, sendGridFromEmail!, sendGridFromName, sp.GetRequiredService<ILogger<EmailSender>>()));
+}
+
+var sendmodeUsername = builder.Configuration["Sendmode:Username"]
+    ?? builder.Configuration["Sendmode:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("SENDMODE_USERNAME")
+    ?? Environment.GetEnvironmentVariable("SENDMODE_API_KEY");
+var sendmodePassword = builder.Configuration["Sendmode:Password"]
+    ?? builder.Configuration["Sendmode:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("SENDMODE_PASSWORD")
+    ?? Environment.GetEnvironmentVariable("SENDMODE_API_KEY");
+var sendmodeApiUrl = builder.Configuration["Sendmode:ApiUrl"]
+    ?? Environment.GetEnvironmentVariable("SENDMODE_API_URL");
+var sendmodeFrom = builder.Configuration["Sendmode:FromNumber"]
+    ?? Environment.GetEnvironmentVariable("SENDMODE_FROM_NUMBER");
+if (!string.IsNullOrWhiteSpace(sendmodeUsername) && !string.IsNullOrWhiteSpace(sendmodePassword))
+{
+    builder.Services.AddHttpClient<SendmodeSmsSender>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddSingleton<ISmsSender>(sp =>
+        sp.GetRequiredService<SendmodeSmsSender>());
+}
 
 // Identity configuration
 builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -76,10 +130,10 @@ if (jwtKey.Length < 32)
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = "LocalBearer";
+    options.DefaultChallengeScheme = "LocalBearer";
 })
-.AddJwtBearer(options =>
+.AddJwtBearer("LocalBearer", options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -92,21 +146,103 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(jwtKey),
         ClockSkew = TimeSpan.Zero
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (string.IsNullOrEmpty(context.Token) && context.Request.Cookies.TryGetValue("guardian_auth", out var cookieToken))
+            {
+                context.Token = cookieToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+})
+.AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
+    options.TokenValidationParameters.NameClaimType = "preferred_username";
+    options.Events ??= new JwtBearerEvents();
+    options.Events.OnTokenValidated = context =>
+    {
+        var tid = context.Principal?.FindFirst("tid")?.Value;
+        if (!string.IsNullOrWhiteSpace(tid))
+        {
+            context.Principal!.Identities.First().AddClaim(new System.Security.Claims.Claim("tenant_id", tid));
+        }
+
+        var school = context.Principal?.FindFirst("school_id")?.Value;
+        if (!string.IsNullOrWhiteSpace(school))
+        {
+            context.Principal!.Identities.First().AddClaim(new System.Security.Claims.Claim("school_id", school));
+        }
+
+        return Task.CompletedTask;
+    };
 });
-// Azure AD authentication (optional - will be added when Microsoft.Identity.Web is configured)
-// For now, only local JWT authentication is enabled
-// TODO: Add Entra authentication when Microsoft.Identity.Web package vulnerability is resolved
 
 // Authorization policies
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("StaffOnly", policy =>
     {
+        policy.AddAuthenticationSchemes(authSchemes);
         policy.RequireAuthenticatedUser();
         policy.RequireClaim("tenant_id");
     });
+
+    options.AddPolicy("AttendanceAccess", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("AttendanceAdmin", "YearHead", "Principal", "DeputyPrincipal", "DLP");
+    });
+
+    options.AddPolicy("CaseManagement", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("YearHead", "Principal", "DeputyPrincipal", "DLP");
+    });
+
+    options.AddPolicy("SafeguardingAccess", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("DLP", "Principal", "DeputyPrincipal");
+    });
+
+    options.AddPolicy("ReportingAccess", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("Principal", "DeputyPrincipal", "ETBTrustAdmin");
+    });
+
+    options.AddPolicy("ETBTrustAccess", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("ETBTrustAdmin");
+    });
+
+    options.AddPolicy("SettingsAdmin", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("Principal", "DeputyPrincipal");
+    });
+
+    options.AddPolicy("TierManagement", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("Principal", "DeputyPrincipal", "ETBTrustAdmin");
+    });
+
+    options.AddPolicy("EvidenceExport", policy =>
+    {
+        policy.AddAuthenticationSchemes(authSchemes);
+        policy.RequireRole("YearHead", "Principal", "DeputyPrincipal", "DLP");
+    });
     
     options.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(authSchemes)
         .RequireAuthenticatedUser()
         .Build();
 });
@@ -128,5 +264,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationsHub>("/hubs/notifications");
 
 app.Run();

@@ -1,5 +1,9 @@
 @using AnseoConnect.Client.Models
+@using AnseoConnect.Contracts.DTOs
+@using DevExpress.Blazor
 @using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+@using System.Text.Json
 
 <DxPopup Visible="@Visible"
          Width="560px"
@@ -28,7 +32,7 @@
                     <DxListBox Data="GuardianOptions"
                                TextFieldName="@nameof(GuardianContact.Name)"
                                ValueFieldName="@nameof(GuardianContact.GuardianId)"
-                               SelectionMode="ListSelectionMode.Multiple"
+                               SelectionMode="ListBoxSelectionMode.Multiple"
                                @bind-Values="Model.GuardianIds" />
                 </div>
                 <div class="consent-panel">
@@ -36,13 +40,27 @@
                     <p>Channel: @Model.Channel</p>
                     <p>Status: @ConsentStatus?.State ?? "UNKNOWN"</p>
                     <p>Source: @ConsentStatus?.Source ?? "N/A"</p>
+                    @if (IsBlocked)
+                    {
+                        <p class="text-danger">Send blocked: consent opted out, quiet hours active, or translation review pending.</p>
+                    }
+                    @if (TranslationReviewRequired)
+                    {
+                        <DxCheckBox TValue="bool"
+                                    @bind-Checked="TranslationConfirmed"
+                                    Text="I have reviewed translated content" />
+                    }
+                    @if (QuietHoursBlocked)
+                    {
+                        <p class="text-warning">One or more selected guardians are currently in quiet hours.</p>
+                    }
                 </div>
                 <div class="compose-grid">
                     <label>Other guardian (optional)</label>
                     <InputText @bind-Value="Model.OtherGuardian" placeholder="Name/phone/email" />
                 </div>
                 <div class="actions">
-                    <DxButton Text="Send" ButtonType="ButtonType.Submit" />
+                    <DxButton Text="Send" ButtonType="ButtonType.Submit" Enabled="!IsBlocked" />
                     <DxButton Text="Cancel" Click="Cancel" />
                 </div>
             </ChildContent>
@@ -59,13 +77,22 @@
     [Parameter] public ConsentStatusDto? ConsentStatus { get; set; }
     [Parameter] public IReadOnlyList<GuardianContact> GuardianOptions { get; set; } = Array.Empty<GuardianContact>();
     [Parameter] public IReadOnlyList<string> TemplateOptions { get; set; } = Array.Empty<string>();
+    [Parameter] public bool TranslationReviewRequired { get; set; }
 
     private ComposeModel Model { get; set; } = new();
     private IReadOnlyList<string> Templates => TemplateOptions.Count == 0 ? new[] { "UnexplainedAbsence", "AttendancePlan", "SafeguardingAlert" } : TemplateOptions;
+    private bool IsTranslationBlocked => TranslationReviewRequired && !TranslationConfirmed;
+    private bool QuietHoursBlocked => GuardianOptions.Where(g => Model.GuardianIds.Contains(g.GuardianId)).Any(g => IsWithinQuietHours(g.QuietHoursJson));
+    private bool IsBlocked => string.Equals(ConsentStatus?.State, "OPTED_OUT", StringComparison.OrdinalIgnoreCase) || IsTranslationBlocked || QuietHoursBlocked;
+    private bool TranslationConfirmed { get; set; }
 
     protected override void OnParametersSet()
     {
         Model.StudentId = StudentId;
+        if (!Visible)
+        {
+            TranslationConfirmed = false;
+        }
     }
 
     private async Task OnVisibleChanged(bool value)
@@ -78,7 +105,7 @@
     {
         var request = new MessageComposeRequest(
             Model.StudentId,
-            Model.GuardianIds,
+            Model.GuardianIds.ToList(),
             Model.Channel,
             Model.Template,
             Model.BodyPreview,
@@ -89,10 +116,49 @@
 
     private async Task Cancel() => await VisibleChanged.InvokeAsync(false);
 
+    private static bool IsWithinQuietHours(string? quietHoursJson)
+    {
+        if (string.IsNullOrWhiteSpace(quietHoursJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(quietHoursJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
+            var root = doc.RootElement;
+            var start = root.TryGetProperty("start", out var startProp) ? startProp.GetString() : null;
+            var end = root.TryGetProperty("end", out var endProp) ? endProp.GetString() : null;
+            var tz = root.TryGetProperty("timezone", out var tzProp) ? tzProp.GetString() : "UTC";
+            if (string.IsNullOrWhiteSpace(start) || string.IsNullOrWhiteSpace(end))
+            {
+                return false;
+            }
+
+            var startTime = TimeSpan.Parse(start);
+            var endTime = TimeSpan.Parse(end);
+            var tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tz ?? "UTC");
+            var nowLocal = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tzInfo).TimeOfDay;
+
+            return startTime <= endTime
+                ? nowLocal >= startTime && nowLocal <= endTime
+                : nowLocal >= startTime || nowLocal <= endTime;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private sealed class ComposeModel
     {
         public Guid StudentId { get; set; }
-        public List<Guid> GuardianIds { get; set; } = new();
+        public IEnumerable<Guid> GuardianIds { get; set; } = Array.Empty<Guid>();
         public string Channel { get; set; } = "SMS";
         public string Template { get; set; } = "UnexplainedAbsence";
         public string BodyPreview { get; set; } = "Hello, your student was absent today.";

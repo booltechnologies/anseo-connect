@@ -1,0 +1,26 @@
+{
+  "templates": [
+    {
+      "id": "ABSENCE_FIRST_CONTACT_SMS",
+      "channel": "SMS",
+      "subject": null,
+      "body": "Dear {{GuardianTitle}}, {{StudentFirstName}} was marked absent on {{Date}}. Please reply with reason or contact the school.",
+      "toneConstraints": ["professional", "concise"],
+      "maxLength": 160
+    },
+    {
+      "id": "ABSENCE_FIRST_CONTACT_EMAIL",
+      "channel": "EMAIL",
+      "subject": "Attendance notification for {{StudentFirstName}}",
+      "body": "<p>Dear {{GuardianTitle}},</p><p>{{StudentFirstName}} was marked absent on {{Date}}. Please reply with the reason or contact the school.</p><p>Thank you.</p>",
+      "toneConstraints": ["professional", "concise"]
+    },
+    {
+      "id": "SAFEGUARDING_ALERT_INTERNAL",
+      "channel": "EMAIL",
+      "subject": "Safeguarding alert for {{StudentFirstName}} {{StudentLastName}}",
+      "body": "<p>Safeguarding alert created.</p><p>Severity: {{Severity}}</p><p>Trigger: {{Trigger}}</p>",
+      "toneConstraints": ["formal", "internal"]
+    }
+  ]
+}

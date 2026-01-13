@@ -1,0 +1,73 @@
+@page "/campaigns"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Campaigns</PageTitle>
+
+<h3>Campaigns</h3>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Name">
+        <DxTextBox @bind-Text="Name" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Segment Id">
+        <DxTextBox @bind-Text="SegmentIdText" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Template Id">
+        <DxTextBox @bind-Text="TemplateIdText" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption="Schedule (UTC)">
+        <DxDateEdit @bind-Date="ScheduledAt" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+<DxButton Text="Create Campaign" Click="CreateCampaign" CssClass="mb-3" />
+
+<DxGrid Data="CampaignRows" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="Name" Caption="Name" />
+        <DxGridDataColumn FieldName="Status" Caption="Status" />
+        <DxGridDataColumn FieldName="ScheduledAtUtc" Caption="Scheduled (UTC)" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record CampaignRow(string Name, string Status, DateTimeOffset? ScheduledAtUtc);
+    private IReadOnlyList<CampaignRow> CampaignRows { get; set; } = Array.Empty<CampaignRow>();
+
+    private string Name { get; set; } = string.Empty;
+    private string SegmentIdText { get; set; } = string.Empty;
+    private string TemplateIdText { get; set; } = string.Empty;
+    private DateTimeOffset? ScheduledAt { get; set; } = DateTimeOffset.UtcNow;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCampaigns();
+    }
+
+    private async Task LoadCampaigns()
+    {
+        var items = await Http.GetFromJsonAsync<List<CampaignRow>>("api/campaigns");
+        CampaignRows = items ?? new List<CampaignRow>();
+    }
+
+    private async Task CreateCampaign()
+    {
+        if (!Guid.TryParse(SegmentIdText, out var segmentId) || !Guid.TryParse(TemplateIdText, out var templateId))
+        {
+            return;
+        }
+
+        var payload = new
+        {
+            TenantId = Guid.Empty, // set by tenant context server-side; placeholder
+            Name,
+            SegmentId = segmentId,
+            TemplateVersionId = templateId,
+            ScheduledAtUtc = ScheduledAt,
+            Status = "SCHEDULED"
+        };
+        await Http.PostAsJsonAsync("api/campaigns", payload);
+        await LoadCampaigns();
+    }
+}

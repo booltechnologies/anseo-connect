@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,6 +14,7 @@ public sealed class AttendanceMark : SchoolEntity
     public string Status { get; set; } = "UNKNOWN"; // PRESENT/ABSENT/etc.
     public string? ReasonCode { get; set; }
     public string Source { get; set; } = "WONDE"; // WONDE/SIS/ANSEO_RFID
+    public string? RawPayloadJson { get; set; }
     public DateTimeOffset RecordedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 
     public Student? Student { get; set; }

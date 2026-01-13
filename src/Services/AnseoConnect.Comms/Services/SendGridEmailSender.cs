@@ -7,12 +7,14 @@ namespace AnseoConnect.Comms.Services;
 /// <summary>
 /// Service for sending email messages via Twilio SendGrid API.
 /// </summary>
-public sealed class SendGridEmailSender
+public sealed class SendGridEmailSender : IEmailProvider
 {
     private readonly SendGridClient _client;
     private readonly string _fromEmail;
     private readonly string _fromName;
     private readonly ILogger<SendGridEmailSender> _logger;
+
+    public string ProviderName => "SENDGRID";
 
     public SendGridEmailSender(
         string apiKey,
@@ -111,6 +113,18 @@ public sealed class SendGridEmailSender
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<SendResult> SendAsync(string to, string subject, string htmlBody, string plainTextBody, CancellationToken ct)
+    {
+        var result = await SendEmailAsync(to, subject, htmlBody, plainTextBody, ct);
+        return new SendResult(
+            result.Success,
+            result.ProviderMessageId,
+            result.Status,
+            result.Success ? null : "SENDGRID_ERROR",
+            result.ErrorMessage);
     }
 }
 

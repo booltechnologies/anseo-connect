@@ -1,0 +1,110 @@
+@page "/evidence/generate/{caseId:guid}"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+<PageTitle>Generate Evidence Pack</PageTitle>
+
+<h3>Generate Evidence Pack</h3>
+
+<EditForm Model="@_request" OnValidSubmit="@GeneratePack">
+    <DataAnnotationsValidator />
+    <DxFormLayout>
+        <DxFormLayoutItem Caption="Date Range Start">
+            <DxDateEdit @bind-Value="@_request.DateRangeStart" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Date Range End">
+            <DxDateEdit @bind-Value="@_request.DateRangeEnd" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Include Sections">
+            <DxCheckBox @bind-Value="@_includeAttendance" Text="Attendance" />
+            <DxCheckBox @bind-Value="@_includeCommunications" Text="Communications" />
+            <DxCheckBox @bind-Value="@_includeLetters" Text="Letters" />
+            <DxCheckBox @bind-Value="@_includeMeetings" Text="Meetings" />
+            <DxCheckBox @bind-Value="@_includeTasks" Text="Tasks" />
+            <DxCheckBox @bind-Value="@_includeTierHistory" Text="Tier History" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Purpose">
+            <DxComboBox Data="@_purposes" @bind-Value="@_request.Purpose" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+    <DxButton Text="Generate" SubmitFormOnEnter="true" />
+    <DxButton Text="Cancel" RenderStyle="ButtonRenderStyle.Secondary" NavigateUrl="/cases" />
+</EditForm>
+
+@if (_isGenerating)
+{
+    <DxProgressBar Indeterminate="true" />
+    <p>Generating evidence pack...</p>
+}
+
+@if (_generatedPack != null)
+{
+    <DxCard>
+        <DxCardHeader>
+            <DxCardHeaderText>
+                <h5>Evidence Pack Generated</h5>
+            </DxCardHeaderText>
+        </DxCardHeader>
+        <DxCardBody>
+            <p>Pack ID: @_generatedPack.EvidencePackId</p>
+            <p>Content Hash: @_generatedPack.ContentHash</p>
+            <DxButton Text="Download PDF" NavigateUrl="@($"/api/cases/{CaseId}/evidence/{_generatedPack.EvidencePackId}/download")" />
+        </DxCardBody>
+    </DxCard>
+}
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+    [Inject] private EvidenceClient Client { get; set; } = default!;
+
+    private GenerateEvidencePackRequestModel _request = new();
+    private bool _includeAttendance = true;
+    private bool _includeCommunications = true;
+    private bool _includeLetters = true;
+    private bool _includeMeetings = true;
+    private bool _includeTasks = true;
+    private bool _includeTierHistory = true;
+    private bool _isGenerating = false;
+    private EvidencePackDto? _generatedPack;
+    private List<string> _purposes = new() { "INSPECTION", "AGENCY_REFERRAL", "PARENT_REQUEST", "ARCHIVE" };
+
+    protected override void OnInitialized()
+    {
+        _request.DateRangeStart = DateOnly.FromDateTime(DateTime.Today.AddMonths(-3));
+        _request.DateRangeEnd = DateOnly.FromDateTime(DateTime.Today);
+        _request.Purpose = "INSPECTION";
+    }
+
+    private async Task GeneratePack()
+    {
+        _isGenerating = true;
+        try
+        {
+            var sections = EvidencePackSections.None;
+            if (_includeAttendance) sections |= EvidencePackSections.Attendance;
+            if (_includeCommunications) sections |= EvidencePackSections.Communications;
+            if (_includeLetters) sections |= EvidencePackSections.Letters;
+            if (_includeMeetings) sections |= EvidencePackSections.Meetings;
+            if (_includeTasks) sections |= EvidencePackSections.Tasks;
+            if (_includeTierHistory) sections |= EvidencePackSections.TierHistory;
+
+            _generatedPack = await Client.GenerateEvidencePackAsync(
+                CaseId,
+                _request.DateRangeStart,
+                _request.DateRangeEnd,
+                sections,
+                _request.Purpose);
+        }
+        finally
+        {
+            _isGenerating = false;
+        }
+    }
+}
+
+public sealed class GenerateEvidencePackRequestModel
+{
+    public DateOnly DateRangeStart { get; set; }
+    public DateOnly DateRangeEnd { get; set; }
+    public string Purpose { get; set; } = string.Empty;
+}

@@ -1,0 +1,26 @@
+@page "/intervention-rules"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+<PageTitle>Intervention Rules</PageTitle>
+
+<h3>Intervention Rule Sets</h3>
+
+<DxGrid Data="@_rules" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(InterventionRuleSetDto.Name)" Caption="Name" />
+    <DxGridDataColumn Field="@nameof(InterventionRuleSetDto.Jurisdiction)" Caption="Jurisdiction" />
+    <DxGridDataColumn Field="@nameof(InterventionRuleSetDto.IsActive)" Caption="Active" />
+</DxGrid>
+
+@code {
+    [Inject] private InterventionsClient Client { get; set; } = default!;
+
+    private List<InterventionRuleSetDto> _rules = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await Client.GetRuleSetsAsync();
+        _rules = data ?? new List<InterventionRuleSetDto>();
+    }
+}
+

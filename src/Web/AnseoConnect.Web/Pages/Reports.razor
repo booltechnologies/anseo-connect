@@ -1,13 +1,52 @@
 @page "/reports"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "ReportingAccess")]
+@inject HttpClient Http
+@inject NavigationManager Nav
 
 <PageTitle>Reports</PageTitle>
 
-<div class="summary-row">
-    <SummaryTile Label="Same-day contact rate" Value="82%" />
-    <SummaryTile Label="Response rate" Value="61%" Hint="SMS + Email" />
-    <SummaryTile Label="Opt-out rate" Value="3%" />
-    <SummaryTile Label="Tier 2 opened" Value="12" Hint="last 7 days" />
-</div>
+@if (SchoolMetrics is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="summary-row">
+        <SummaryTile Label="Open cases" Value="@SchoolMetrics.OpenCases.ToString()" />
+        <SummaryTile Label="Safeguarding alerts" Value="@SchoolMetrics.SafeguardingAlerts.ToString()" />
+        <SummaryTile Label="Messages sent" Value="@SchoolMetrics.SentMessages.ToString()" />
+        <SummaryTile Label="Delivered" Value="@SchoolMetrics.DeliveredMessages.ToString()" />
+    </div>
 
-<p>Minimal reporting for v0.1. Extend via API when ready.</p>
+    <h3>Open cases by tier</h3>
+    <ul>
+        @foreach (var t in SchoolMetrics.OpenCasesByTier)
+        {
+            <li>Tier @t.Tier: @t.Count</li>
+        }
+    </ul>
+
+    <h3>Comms</h3>
+    <p>Failed: @SchoolMetrics.FailedMessages · Replies: @SchoolMetrics.ReplyCount</p>
+}
+
+@code {
+    private SchoolDashboardMetrics? SchoolMetrics { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SchoolMetrics = await Http.GetFromJsonAsync<SchoolDashboardMetrics>("api/reports/school-dashboard");
+    }
+
+    private sealed record TierCount(int Tier, int Count);
+
+    private sealed record SchoolDashboardMetrics(
+        int TotalAttendanceMarks,
+        int OpenCases,
+        int SafeguardingAlerts,
+        IReadOnlyList<TierCount> OpenCasesByTier,
+        int SentMessages,
+        int DeliveredMessages,
+        int FailedMessages,
+        int ReplyCount);
+}

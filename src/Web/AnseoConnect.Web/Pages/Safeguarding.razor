@@ -14,7 +14,7 @@ else
     <DxGrid Data="Alerts"
             SelectionMode="GridSelectionMode.Single"
             SelectedDataItem="@Selected"
-            SelectedDataItemChanged="alert => Selected = alert">
+            SelectedDataItemChanged="@OnSelectedChanged">
         <Columns>
             <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.StudentName)" Caption="Student" />
             <DxGridDataColumn FieldName="@nameof(SafeguardingAlertSummary.Severity)" Caption="Severity" />
@@ -46,6 +46,12 @@ else
         {
             NavigationManager.NavigateTo($"/safeguarding/{item.AlertId}");
         }
+    }
+
+    private Task OnSelectedChanged(object? alert)
+    {
+        Selected = alert as SafeguardingAlertSummary;
+        return Task.CompletedTask;
     }
 
     private async Task AcknowledgeSelected()

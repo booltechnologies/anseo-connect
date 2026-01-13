@@ -1,0 +1,256 @@
+@page "/playbooks"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using AnseoConnect.Client.Models
+
+<PageTitle>Playbooks</PageTitle>
+
+<h3>Playbook Designer</h3>
+
+<DxGrid Data="@_playbooks" ShowFilterRow="false" ShowGroupPanel="false" SelectedDataItemsChanged="OnPlaybookSelected">
+    <Columns>
+        <DxGridDataColumn Field="@nameof(PlaybookDefinitionDto.Name)" Caption="Name" />
+        <DxGridDataColumn Field="@nameof(PlaybookDefinitionDto.TriggerStageType)" Caption="Trigger Stage" />
+        <DxGridDataColumn Field="@nameof(PlaybookDefinitionDto.IsActive)" Caption="Active" />
+        <DxGridDataColumn Field="@nameof(PlaybookDefinitionDto.EscalationAfterDays)" Caption="Escalate After (days)" />
+    </Columns>
+</DxGrid>
+
+<div class="mt-3">
+<DxFormLayout CssClass="mb-3">
+        <DxFormLayoutItem Caption="Name">
+            <DxTextBox @bind-Text="_draftPlaybook.Name" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Trigger Stage">
+            <DxTextBox @bind-Text="_draftPlaybook.TriggerStageType" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Description">
+            <DxTextBox @bind-Text="_draftPlaybook.Description" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Escalation After Days">
+            <DxSpinEdit @bind-Value="_draftPlaybook.EscalationAfterDays" Min="0" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Active">
+            <DxCheckBox T="bool" @bind-Checked="_draftPlaybook.IsActive" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption=" ">
+            <DxButton Text="Save Playbook" Click="SavePlaybookAsync" Enabled="!_busy" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+</div>
+
+@if (_selectedDetail != null)
+{
+    <h4>Steps for @_selectedDetail.Playbook.Name</h4>
+    <DxGrid Data="@_selectedDetail.Steps" ShowFilterRow="false" ShowGroupPanel="false">
+        <Columns>
+            <DxGridDataColumn Field="@nameof(PlaybookStepDto.Order)" Caption="#" />
+            <DxGridDataColumn Field="@nameof(PlaybookStepDto.OffsetDays)" Caption="Offset (days)" />
+            <DxGridDataColumn Field="@nameof(PlaybookStepDto.Channel)" Caption="Channel" />
+            <DxGridDataColumn Field="@nameof(PlaybookStepDto.TemplateKey)" Caption="Template" />
+        </Columns>
+    </DxGrid>
+
+    <h5 class="mt-3">Add Step</h5>
+<DxFormLayout>
+        <DxFormLayoutItem Caption="Offset Days">
+            <DxSpinEdit @bind-Value="_draftStep.OffsetDays" Min="0" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Channel">
+            <DxComboBox Data="@_channels" @bind-Value="_draftStep.Channel" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Template Key">
+            <DxTextBox @bind-Text="_draftStep.TemplateKey" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Skip If Reply">
+            <DxCheckBox T="bool" @bind-Checked="_draftStep.SkipIfPreviousReplied" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption=" ">
+            <DxButton Text="Add Step" Click="AddStepAsync" Enabled="@(!_busy && _selectedDetail != null)" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+}
+
+@if (!string.IsNullOrWhiteSpace(_status))
+{
+    <p class="text-success mt-2">@_status</p>
+}
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <p class="text-danger mt-2">@_error</p>
+}
+
+@code {
+    [Inject] private PlaybooksClient Playbooks { get; set; } = default!;
+
+    private List<PlaybookDefinitionDto> _playbooks = new();
+    private PlaybookDetailDto? _selectedDetail;
+    private bool _busy;
+    private string? _status;
+    private string? _error;
+
+    private DraftPlaybook _draftPlaybook = new()
+    {
+        PlaybookId = Guid.Empty,
+        Name = string.Empty,
+        Description = string.Empty,
+        TriggerStageType = "LETTER_1",
+        IsActive = true,
+        EscalationAfterDays = 7,
+        StopConditionsJson = "[]",
+        EscalationConditionsJson = "[]"
+    };
+
+    private DraftStep _draftStep = new()
+    {
+        StepId = Guid.Empty,
+        PlaybookId = Guid.Empty,
+        Order = 0,
+        OffsetDays = 0,
+        Channel = "SMS",
+        TemplateKey = null,
+        FallbackChannel = null,
+        SkipIfPreviousReplied = false
+    };
+
+    private readonly IReadOnlyList<string> _channels = new[] { "SMS", "EMAIL", "WHATSAPP", "IN_APP" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPlaybooksAsync();
+    }
+
+    private async Task LoadPlaybooksAsync()
+    {
+        _playbooks = (await Playbooks.GetDefinitionsAsync())?.ToList() ?? new List<PlaybookDefinitionDto>();
+        _selectedDetail = null;
+    }
+
+    private async Task OnPlaybookSelected(IReadOnlyList<object> selected)
+    {
+        if (selected is not null && selected.FirstOrDefault() is PlaybookDefinitionDto dto)
+        {
+            _selectedDetail = await Playbooks.GetPlaybookAsync(dto.PlaybookId);
+        }
+    }
+
+    private async Task SavePlaybookAsync()
+    {
+        _busy = true;
+        _error = null;
+        _status = null;
+
+        var dto = new PlaybookDefinitionDto(
+            _draftPlaybook.PlaybookId,
+            _draftPlaybook.Name,
+            _draftPlaybook.Description,
+            _draftPlaybook.TriggerStageType,
+            _draftPlaybook.IsActive,
+            _draftPlaybook.EscalationAfterDays,
+            _draftPlaybook.StopConditionsJson,
+            _draftPlaybook.EscalationConditionsJson);
+
+        if (_draftPlaybook.PlaybookId == Guid.Empty)
+        {
+            var created = await Playbooks.CreateAsync(dto);
+            if (created != null)
+            {
+                _status = "Playbook created.";
+                _draftPlaybook = new DraftPlaybook
+                {
+                    PlaybookId = Guid.Empty,
+                    Name = string.Empty,
+                    Description = string.Empty,
+                    TriggerStageType = "LETTER_1",
+                    IsActive = true,
+                    EscalationAfterDays = 7,
+                    StopConditionsJson = "[]",
+                    EscalationConditionsJson = "[]"
+                };
+                await LoadPlaybooksAsync();
+            }
+            else
+            {
+                _error = "Failed to create playbook.";
+            }
+        }
+        else
+        {
+            var updated = await Playbooks.UpdateAsync(_draftPlaybook.PlaybookId, dto);
+            _status = updated != null ? "Playbook updated." : "Failed to update playbook.";
+            await LoadPlaybooksAsync();
+        }
+
+        _busy = false;
+    }
+
+    private async Task AddStepAsync()
+    {
+        if (_selectedDetail == null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _status = null;
+
+        var stepDto = new PlaybookStepDto(
+            _draftStep.StepId,
+            _draftStep.PlaybookId,
+            _draftStep.Order,
+            _draftStep.OffsetDays,
+            _draftStep.Channel,
+            _draftStep.TemplateKey,
+            _draftStep.FallbackChannel,
+            _draftStep.SkipIfPreviousReplied);
+
+        var created = await Playbooks.AddStepAsync(_selectedDetail.Playbook.PlaybookId, stepDto);
+        if (created != null)
+        {
+            _status = "Step added.";
+            _selectedDetail = await Playbooks.GetPlaybookAsync(_selectedDetail.Playbook.PlaybookId);
+            _draftStep = new DraftStep
+            {
+                StepId = Guid.Empty,
+                PlaybookId = Guid.Empty,
+                Order = 0,
+                OffsetDays = 0,
+                Channel = "SMS",
+                TemplateKey = null,
+                FallbackChannel = null,
+                SkipIfPreviousReplied = false
+            };
+        }
+        else
+        {
+            _error = "Failed to add step.";
+        }
+
+        _busy = false;
+    }
+
+    private class DraftPlaybook
+    {
+        public Guid PlaybookId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string TriggerStageType { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public int EscalationAfterDays { get; set; }
+        public string StopConditionsJson { get; set; } = "[]";
+        public string EscalationConditionsJson { get; set; } = "[]";
+    }
+
+    private class DraftStep
+    {
+        public Guid StepId { get; set; }
+        public Guid PlaybookId { get; set; }
+        public int Order { get; set; }
+        public int OffsetDays { get; set; }
+        public string Channel { get; set; } = string.Empty;
+        public string? TemplateKey { get; set; }
+        public string? FallbackChannel { get; set; }
+        public bool SkipIfPreviousReplied { get; set; }
+    }
+}

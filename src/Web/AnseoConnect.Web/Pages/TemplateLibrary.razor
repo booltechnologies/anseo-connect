@@ -1,0 +1,58 @@
+@page "/templates"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Template Library</PageTitle>
+
+<h3>Template Library</h3>
+
+<DxGrid Data="Templates">
+    <Columns>
+        <DxGridDataColumn FieldName="TemplateKey" Caption="Key" />
+        <DxGridDataColumn FieldName="Channel" Caption="Channel" />
+        <DxGridDataColumn FieldName="Version" Caption="Version" />
+        <DxGridDataColumn FieldName="Status" Caption="Status" />
+        <DxGridDataColumn FieldName="ApprovedAtUtc" Caption="Approved At" />
+        <DxGridDataColumn Caption="Actions">
+            <CellDisplayTemplate Context="ctx">
+                <DxButton Text="Approve" Click="@(() => OnApprove((TemplateRow)ctx.DataItem))" />
+                <DxButton Text="Rollback" Click="@(() => OnRollback((TemplateRow)ctx.DataItem))" />
+            </CellDisplayTemplate>
+        </DxGridDataColumn>
+    </Columns>
+</DxGrid>
+
+@code {
+    private record TemplateRow(Guid MessageTemplateId, string TemplateKey, string Channel, int Version, string Status, DateTimeOffset? ApprovedAtUtc);
+    private IReadOnlyList<TemplateRow> Templates { get; set; } = Array.Empty<TemplateRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var items = await Http.GetFromJsonAsync<List<TemplateRow>>("api/templates");
+        Templates = items ?? new List<TemplateRow>();
+    }
+
+    private async Task OnApprove(TemplateRow row)
+    {
+        if (row != null)
+        {
+            await Http.PostAsync($"api/templates/{row.MessageTemplateId}/approve", null);
+            await Load();
+        }
+    }
+
+    private async Task OnRollback(TemplateRow row)
+    {
+        if (row != null)
+        {
+            await Http.PostAsync($"api/templates/{row.MessageTemplateId}/rollback", null);
+            await Load();
+        }
+    }
+}

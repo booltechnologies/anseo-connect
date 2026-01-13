@@ -7,8 +7,8 @@ namespace AnseoConnect.Client;
 
 public sealed class AuthClient : ApiClientBase
 {
-    public AuthClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<AuthClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public AuthClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<AuthClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 

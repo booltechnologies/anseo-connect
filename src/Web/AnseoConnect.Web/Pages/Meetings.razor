@@ -1,0 +1,137 @@
+@page "/intervention-meetings"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+<PageTitle>Intervention Meetings</PageTitle>
+
+<h3>Meetings</h3>
+
+<DxGrid Data="@_meetings" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(InterventionMeetingDto.StudentName)" Caption="Student" />
+    <DxGridDataColumn Field="@nameof(InterventionMeetingDto.StageName)" Caption="Stage" />
+    <DxGridDataColumn Field="@nameof(InterventionMeetingDto.ScheduledAtUtc)" Caption="Scheduled" />
+    <DxGridDataColumn Field="@nameof(InterventionMeetingDto.Status)" Caption="Status" />
+    <DxGridDataColumn Field="@nameof(InterventionMeetingDto.OutcomeCode)" Caption="Outcome" />
+    <DxGridDataColumn Caption="Actions">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (InterventionMeetingDto)context.DataItem;
+            }
+            <DxButton Text="Record Outcome" Click="@(() => BeginEdit(row))" />
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+</DxGrid>
+
+@if (_editingMeeting is not null)
+{
+    <h4 class="mt-3">Record Outcome for @_editingMeeting.StudentName</h4>
+    <DxFormLayout>
+        <DxFormLayoutItem Caption="Status">
+            <DxComboBox Data="@_statusOptions"
+                        TData="string"
+                        TValue="string"
+                        Value="@_outcomeStatus"
+                        ValueChanged="@OnStatusChanged"
+                        ValueChangedEvent="ValueChangedEvent.OnInput"
+                        NullText="Select status" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Outcome Code">
+            <DxTextBox Text="@_outcomeCode" TextChanged="@OnOutcomeCodeChanged" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Notes">
+            <DxTextBox Text="@_outcomeNotes" TextChanged="@OnOutcomeNotesChanged" Multiline="true" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="">
+            <DxButton Text="Save Outcome" Click="@SaveOutcomeAsync" Enabled="!_busy" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <p class="text-success">@_message</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <p class="text-danger">@_error</p>
+    }
+}
+
+@code {
+    [Inject] private MeetingsClient Client { get; set; } = default!;
+
+    private List<InterventionMeetingDto> _meetings = new();
+    private readonly string[] _statusOptions = new[] { "SCHEDULED", "HELD", "CANCELLED" };
+    private InterventionMeetingDto? _editingMeeting;
+    private string? _outcomeStatus;
+    private string? _outcomeCode;
+    private string? _outcomeNotes;
+    private bool _busy;
+    private string? _message;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMeetingsAsync();
+    }
+
+    private async Task LoadMeetingsAsync()
+    {
+        var data = await Client.GetMeetingsAsync();
+        _meetings = data ?? new List<InterventionMeetingDto>();
+    }
+
+    private void BeginEdit(InterventionMeetingDto meeting)
+    {
+        _editingMeeting = meeting;
+        _outcomeStatus = meeting.Status;
+        _outcomeCode = meeting.OutcomeCode;
+        _outcomeNotes = meeting.OutcomeNotes;
+        _message = null;
+        _error = null;
+    }
+
+    private async Task SaveOutcomeAsync()
+    {
+        if (_editingMeeting == null || string.IsNullOrWhiteSpace(_outcomeStatus))
+        {
+            _error = "Select a status before saving.";
+            return;
+        }
+
+        _busy = true;
+        _message = null;
+        _error = null;
+
+        var request = new MeetingOutcomeRequest(_outcomeStatus, _outcomeCode, _outcomeNotes, null);
+        var ok = await Client.RecordOutcomeAsync(_editingMeeting.MeetingId, request);
+        if (ok)
+        {
+            _message = "Outcome saved.";
+            await LoadMeetingsAsync();
+        }
+        else
+        {
+            _error = "Failed to save outcome.";
+        }
+
+        _busy = false;
+    }
+
+    private Task OnStatusChanged(string value)
+    {
+        _outcomeStatus = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnOutcomeCodeChanged(string value)
+    {
+        _outcomeCode = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnOutcomeNotesChanged(string value)
+    {
+        _outcomeNotes = value;
+        return Task.CompletedTask;
+    }
+}
+

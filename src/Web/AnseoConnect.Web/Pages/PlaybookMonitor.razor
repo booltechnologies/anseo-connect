@@ -1,0 +1,111 @@
+@page "/playbook-runs"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using AnseoConnect.Client.Models
+
+<PageTitle>Playbook Runs</PageTitle>
+
+<h3>Playbook Monitor</h3>
+
+<DxComboBox Data="@_statuses" @bind-Value="_selectedStatus" Caption="Status Filter" />
+<DxButton Text="Refresh" Click="LoadRunsAsync" Enabled="!_busy" CssClass="mb-3" />
+
+<DxGrid Data="@_runs" ShowFilterRow="false" ShowGroupPanel="false" SelectedDataItemsChanged="OnRunSelected">
+    <Columns>
+        <DxGridDataColumn Field="@nameof(PlaybookRunDto.Status)" Caption="Status" />
+        <DxGridDataColumn Field="@nameof(PlaybookRunDto.TriggeredAtUtc)" Caption="Triggered" />
+        <DxGridDataColumn Field="@nameof(PlaybookRunDto.NextStepScheduledAtUtc)" Caption="Next Step" />
+        <DxGridDataColumn Field="@nameof(PlaybookRunDto.StopReason)" Caption="Stop Reason" />
+    </Columns>
+</DxGrid>
+
+@if (_selectedRun != null)
+{
+    <h4 class="mt-3">Run Details</h4>
+    <p>Status: @_selectedRun.Run.Status</p>
+    <p>Current Step Order: @_selectedRun.Run.CurrentStepOrder</p>
+    <p>Stop Reason: @_selectedRun.Run.StopReason</p>
+    <DxButton Text="Stop Run" Click="StopRunAsync" Enabled="@(!_busy && _selectedRun.Run.Status == "ACTIVE")" />
+
+    <h5 class="mt-2">Execution Log</h5>
+    <DxGrid Data="@_selectedRun.Logs" ShowFilterRow="false" ShowGroupPanel="false">
+        <Columns>
+            <DxGridDataColumn Field="@nameof(PlaybookExecutionLogDto.Status)" Caption="Status" />
+            <DxGridDataColumn Field="@nameof(PlaybookExecutionLogDto.Channel)" Caption="Channel" />
+            <DxGridDataColumn Field="@nameof(PlaybookExecutionLogDto.ScheduledForUtc)" Caption="Scheduled" />
+            <DxGridDataColumn Field="@nameof(PlaybookExecutionLogDto.ExecutedAtUtc)" Caption="Executed" />
+            <DxGridDataColumn Field="@nameof(PlaybookExecutionLogDto.SkipReason)" Caption="Skip Reason" />
+        </Columns>
+    </DxGrid>
+}
+
+@if (!string.IsNullOrWhiteSpace(_statusMessage))
+{
+    <p class="text-success mt-2">@_statusMessage</p>
+}
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <p class="text-danger mt-2">@_error</p>
+}
+
+@code {
+    [Inject] private PlaybooksClient Playbooks { get; set; } = default!;
+
+    private List<PlaybookRunDto> _runs = new();
+    private PlaybookRunDetailDto? _selectedRun;
+    private bool _busy;
+    private string? _selectedStatus;
+    private string? _statusMessage;
+    private string? _error;
+
+    private readonly IReadOnlyList<string> _statuses = new[] { null!, "ACTIVE", "STOPPED", "COMPLETED" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRunsAsync();
+    }
+
+    private async Task LoadRunsAsync()
+    {
+        _busy = true;
+        _error = null;
+        _statusMessage = null;
+
+        _runs = (await Playbooks.GetRunsAsync(_selectedStatus))?.ToList() ?? new List<PlaybookRunDto>();
+        _selectedRun = null;
+        _busy = false;
+    }
+
+    private async Task OnRunSelected(IReadOnlyList<object> selected)
+    {
+        if (selected is not null && selected.FirstOrDefault() is PlaybookRunDto dto)
+        {
+            _selectedRun = await Playbooks.GetRunAsync(dto.RunId);
+        }
+    }
+
+    private async Task StopRunAsync()
+    {
+        if (_selectedRun == null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _statusMessage = null;
+
+        var ok = await Playbooks.StopRunAsync(_selectedRun.Run.RunId);
+        if (ok)
+        {
+            _statusMessage = "Run stopped.";
+            await LoadRunsAsync();
+        }
+        else
+        {
+            _error = "Failed to stop run.";
+        }
+
+        _busy = false;
+    }
+}

@@ -16,17 +16,20 @@ public sealed class SafeguardingService
     private readonly ISafeguardingEvaluator _safeguardingEvaluator;
     private readonly ILogger<SafeguardingService> _logger;
     private readonly ITenantContext _tenantContext;
+    private readonly NotificationRoutingService _notificationRouting;
 
     public SafeguardingService(
         AnseoConnectDbContext dbContext,
         ISafeguardingEvaluator safeguardingEvaluator,
         ILogger<SafeguardingService> logger,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        NotificationRoutingService notificationRouting)
     {
         _dbContext = dbContext;
         _safeguardingEvaluator = safeguardingEvaluator;
         _logger = logger;
         _tenantContext = tenantContext;
+        _notificationRouting = notificationRouting;
     }
 
     /// <summary>
@@ -100,6 +103,18 @@ public sealed class SafeguardingService
             alert.AlertId,
             caseId,
             alert.Severity);
+
+        await _notificationRouting.RouteAsync(
+            route: "SAFEGUARDING_DEFAULT",
+            type: "SAFETY_ALERT",
+            payload: new
+            {
+                alert.AlertId,
+                alert.CaseId,
+                alert.Severity,
+                alert.CreatedAtUtc
+            },
+            cancellationToken);
 
         return alert;
     }

@@ -1,0 +1,53 @@
+@page "/etb"
+@attribute [Authorize(Policy = "ETBTrustAccess")]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>ETB Dashboard</PageTitle>
+
+@if (EtbMetrics is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="summary-row">
+        <SummaryTile Label="Schools" Value="@EtbMetrics.SchoolCount.ToString()" />
+        <SummaryTile Label="Open cases" Value="@EtbMetrics.OpenCases.ToString()" />
+        <SummaryTile Label="Safeguarding alerts" Value="@EtbMetrics.SafeguardingAlerts.ToString()" />
+        <SummaryTile Label="Delivered messages" Value="@EtbMetrics.DeliveredMessages.ToString()" />
+    </div>
+
+    <h3>Open cases by tier</h3>
+    <ul>
+        @foreach (var t in EtbMetrics.OpenCasesByTier)
+        {
+            <li>Tier @t.Tier: @t.Count</li>
+        }
+    </ul>
+
+    <h3>Comms</h3>
+    <p>Sent: @EtbMetrics.SentMessages · Failed: @EtbMetrics.FailedMessages</p>
+}
+
+@code {
+    private EtbDashboardMetrics? EtbMetrics { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // In a real app, etbTrustId comes from user claims or selection
+        var etbTrustId = Guid.Empty; // placeholder
+        EtbMetrics = await Http.GetFromJsonAsync<EtbDashboardMetrics>($"api/reports/etb-dashboard/{etbTrustId}");
+    }
+
+    private sealed record TierCount(int Tier, int Count);
+
+    private sealed record EtbDashboardMetrics(
+        int SchoolCount,
+        int OpenCases,
+        int SafeguardingAlerts,
+        IReadOnlyList<TierCount> OpenCasesByTier,
+        int SentMessages,
+        int DeliveredMessages,
+        int FailedMessages);
+}

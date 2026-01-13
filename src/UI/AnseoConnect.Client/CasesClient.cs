@@ -7,8 +7,8 @@ namespace AnseoConnect.Client;
 
 public sealed class CasesClient : ApiClientBase
 {
-    public CasesClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<CasesClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public CasesClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<CasesClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 
@@ -31,36 +31,13 @@ public sealed class CasesClient : ApiClientBase
         if (overdue.HasValue) query += $"&overdue={overdue.Value}";
 
         var result = await GetOrDefaultAsync<PagedResult<CaseDto>>(query, cancellationToken);
-        if (result != null)
-        {
-            return result;
-        }
-
-        var all = SampleData.Cases
-            .Where(c => string.Equals(c.Status, status, StringComparison.OrdinalIgnoreCase))
-            .Where(c => string.IsNullOrWhiteSpace(caseType) || string.Equals(c.CaseType, caseType, StringComparison.OrdinalIgnoreCase))
-            .Where(c => !tier.HasValue || c.Tier == tier.Value)
-            .ToList();
-        var items = all.Skip(skip).Take(take).ToList();
-        var totalCount = all.Count;
-        return new PagedResult<CaseDto>(items, totalCount, skip, take, (skip + take) < totalCount);
+        return result ?? new PagedResult<CaseDto>(Array.Empty<CaseDto>(), 0, skip, take, false);
     }
 
     public async Task<CaseDetailDto?> GetCaseAsync(Guid caseId, CancellationToken cancellationToken = default)
     {
-        var result = await GetOrDefaultAsync<CaseDto>($"api/cases/{caseId}", cancellationToken);
-        if (result != null)
-        {
-            return new CaseDetailDto(result, SampleData.Checklist);
-        }
-
-        var sample = SampleData.FindCase(caseId);
-        if (sample != null)
-        {
-            return new CaseDetailDto(sample, SampleData.Checklist);
-        }
-
-        return null;
+        var result = await GetOrDefaultAsync<CaseDetailDto>($"api/cases/{caseId}", cancellationToken);
+        return result;
     }
 
     public async Task<bool> AddNoteAsync(Guid caseId, string note, CancellationToken cancellationToken = default)

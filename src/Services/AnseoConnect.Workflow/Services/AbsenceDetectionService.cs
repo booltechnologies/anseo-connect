@@ -2,6 +2,7 @@ using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using AnseoConnect.Data.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace AnseoConnect.Workflow.Services;
 
@@ -46,9 +47,57 @@ public sealed class AbsenceDetectionService
             throw new InvalidOperationException($"School {schoolId} not found.");
         }
 
-        // Default cutoff: 10:00 AM
-        var cutoff = cutoffTime ?? TimeOnly.FromTimeSpan(TimeSpan.FromHours(10));
-        var cutoffDateTime = date.ToDateTime(cutoff);
+        // Resolve timezone
+        var tz = "UTC";
+        if (!string.IsNullOrWhiteSpace(school.Timezone))
+        {
+            tz = school.Timezone;
+        }
+
+        TimeZoneInfo tzInfo;
+        try
+        {
+            tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tz);
+        }
+        catch
+        {
+            _logger.LogWarning("Invalid timezone {Timezone} for school {SchoolId}, defaulting to UTC", tz, schoolId);
+            tzInfo = TimeZoneInfo.Utc;
+        }
+
+        // Load per-school cutoffs
+        var settings = await _dbContext.SchoolSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SchoolId == schoolId, cancellationToken);
+
+        var amCutoff = cutoffTime ?? settings?.AMCutoffTime ?? new TimeOnly(10, 30);
+        var pmCutoff = settings?.PMCutoffTime ?? new TimeOnly(14, 30);
+
+        var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tzInfo);
+        if (localNow.Date < date.ToDateTime(TimeOnly.MinValue).Date)
+        {
+            // Do not run detection before the target date in school local time
+            return new List<UnexplainedAbsence>();
+        }
+
+        var allowedSessions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (localNow.Date > date.ToDateTime(TimeOnly.MinValue).Date)
+        {
+            // Past the target date: include both sessions
+            allowedSessions.Add("AM");
+            allowedSessions.Add("PM");
+        }
+        else
+        {
+            if (localNow.TimeOfDay >= amCutoff.ToTimeSpan()) allowedSessions.Add("AM");
+            if (localNow.TimeOfDay >= pmCutoff.ToTimeSpan()) allowedSessions.Add("PM");
+        }
+
+        if (allowedSessions.Count == 0)
+        {
+            _logger.LogInformation("Cutoff not reached for date {Date} in school {SchoolId}; skipping detection.", date, schoolId);
+            return new List<UnexplainedAbsence>();
+        }
 
         // Query attendance marks for the date where:
         // - Status is ABSENT or UNKNOWN
@@ -56,6 +105,7 @@ public sealed class AbsenceDetectionService
         // - Created/updated after cutoff time
         var unexplainedAbsences = await _dbContext.AttendanceMarks
             .Where(am => am.Date == date &&
+                        allowedSessions.Contains(am.Session) &&
                         (am.Status == "ABSENT" || am.Status == "UNKNOWN") &&
                         (am.ReasonCode == null || am.ReasonCode == ""))
             .Select(am => new { am.StudentId, am.Session })

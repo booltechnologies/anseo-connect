@@ -1,0 +1,71 @@
+@page "/roi"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using AnseoConnect.Client.Models
+
+<PageTitle>ROI Dashboard</PageTitle>
+
+<h3>Automation ROI</h3>
+
+<DxFormLayout CssClass="mb-3">
+    <DxFormLayoutItem Caption="School Id">
+        <DxTextBox @bind-Text="_schoolIdText" />
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Caption=" ">
+        <DxButton Text="Load" Click="LoadAsync" Enabled="!_busy" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+@if (_summary != null)
+{
+    <div class="row">
+        <div class="col-md-3"><strong>Playbooks Run:</strong> @_summary.TotalPlaybooksRun</div>
+        <div class="col-md-3"><strong>Touches Sent:</strong> @_summary.TotalTouchesSent</div>
+        <div class="col-md-3"><strong>Hours Saved:</strong> @_summary.EstimatedHoursSaved</div>
+        <div class="col-md-3"><strong>Students Improved:</strong> @_summary.StudentsImprovedAfterPlaybook</div>
+    </div>
+}
+
+<DxChart Data="@_metrics">
+    <DxChartLineSeries T="AutomationMetricsDto" TValue="int" TArgument="DateOnly"
+                       ArgumentField="@((AutomationMetricsDto m) => m.Date)"
+                       ValueField="@((AutomationMetricsDto m) => m.StepsSent)"
+                       Name="Touches Sent" />
+    <DxChartLineSeries T="AutomationMetricsDto" TValue="int" TArgument="DateOnly"
+                       ArgumentField="@((AutomationMetricsDto m) => m.Date)"
+                       ValueField="@((AutomationMetricsDto m) => m.PlaybooksStarted)"
+                       Name="Playbooks Started" />
+    <DxChartLegend Visible="true" />
+</DxChart>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <p class="text-danger mt-2">@_error</p>
+}
+
+@code {
+    [Inject] private TelemetryClient Telemetry { get; set; } = default!;
+
+    private List<AutomationMetricsDto> _metrics = new();
+    private RoiSummaryDto? _summary;
+    private bool _busy;
+    private string? _error;
+    private string _schoolIdText = string.Empty;
+
+    private async Task LoadAsync()
+    {
+        if (!Guid.TryParse(_schoolIdText, out var schoolId))
+        {
+            _error = "Enter a valid school id.";
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+
+        _metrics = (await Telemetry.GetMetricsAsync())?.ToList() ?? new List<AutomationMetricsDto>();
+        _summary = await Telemetry.GetRoiAsync(schoolId);
+
+        _busy = false;
+    }
+}

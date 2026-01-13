@@ -9,7 +9,7 @@ namespace AnseoConnect.Comms.Services;
 /// Service for sending SMS messages via Sendmode REST API.
 /// Based on Sendmode REST API documentation: https://developers.sendmode.com/restdocs
 /// </summary>
-public sealed class SendmodeSender
+public sealed class SendmodeSender : ISmsProvider
 {
     private readonly HttpClient _httpClient;
     private readonly string _username;
@@ -17,6 +17,8 @@ public sealed class SendmodeSender
     private readonly string? _fromNumber;
     private readonly string _apiUrl;
     private readonly ILogger<SendmodeSender> _logger;
+
+    public string ProviderName => "SENDMODE";
 
     public SendmodeSender(
         HttpClient httpClient,
@@ -137,6 +139,18 @@ public sealed class SendmodeSender
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<SendResult> SendAsync(string to, string body, CancellationToken cancellationToken)
+    {
+        var result = await SendSmsAsync(to, body, cancellationToken);
+        return new SendResult(
+            result.Success,
+            result.ProviderMessageId,
+            result.Status,
+            result.Success ? null : "SENDMODE_ERROR",
+            result.ErrorMessage);
     }
 }
 

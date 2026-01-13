@@ -97,9 +97,10 @@ Creates Azure Service Bus topics and subscriptions.
 - `-ResourceGroupName` (Required): Azure resource group name
 - `-ServiceBusNamespace` (Required): Service Bus namespace name
 - `-Location` (Optional): Azure region (default: "northeurope")
+- `-CreateNamespaceIfMissing` (Optional): Automatically create the namespace if it doesn't exist
 
 **What it does:**
-- Verifies namespace exists
+- Verifies namespace exists (or creates it if `-CreateNamespaceIfMissing` is specified)
 - Creates topics: `attendance`, `comms`, `workflow`
 - Creates subscriptions:
   - `workflow-attendance-ingested` on `attendance` topic
@@ -112,12 +113,18 @@ Creates Azure Service Bus topics and subscriptions.
 - Azure CLI installed (`az --version` to check)
 - Logged in to Azure (`az login`)
 - Appropriate permissions (Contributor or Service Bus Data Owner)
-- Service Bus namespace already created
+- Service Bus namespace already created (or use `-CreateNamespaceIfMissing` to auto-create)
 
-**Example:**
+**Example (namespace already exists):**
 ```powershell
 cd E:\Development\AnseoConnect
 .\scripts\create-servicebus-topics.ps1 -ResourceGroupName "anseo-connect-rg" -ServiceBusNamespace "anseo-connect-sb"
+```
+
+**Example (auto-create namespace if missing):**
+```powershell
+cd E:\Development\AnseoConnect
+.\scripts\create-servicebus-topics.ps1 -ResourceGroupName "AnseoConnect" -ServiceBusNamespace "anseoconnectsb" -CreateNamespaceIfMissing
 ```
 
 **Output:**
@@ -259,6 +266,7 @@ If you don't have a Service Bus namespace:
 - Verify resource group name
 - Verify namespace name
 - Check you're logged in to correct Azure subscription (`az account show`)
+- Use `-CreateNamespaceIfMissing` parameter to auto-create the namespace
 
 **"Authorization failed"**
 - Check you have Contributor or Service Bus Data Owner role
@@ -274,6 +282,20 @@ If you don't have a Service Bus namespace:
 **"Access denied"**
 - On Windows, ensure you have write permissions to user profile
 - Check user secrets location: `%APPDATA%\Microsoft\UserSecrets\<user-secrets-id>\secrets.json`
+
+## New configuration keys (Comms / ApiGateway / Web)
+- `Translator:Key` / env `AZURE_TRANSLATOR_KEY`
+- `Translator:Region` / env `AZURE_TRANSLATOR_REGION`
+- `Translator:Endpoint` (optional) / env `AZURE_TRANSLATOR_ENDPOINT`
+- SignalR hub path: `/hubs/notifications` (ApiGateway) – ensure websockets enabled.
+- New APIs:
+  - `GET /api/messages`, `GET /api/messages/{id}`, `POST /api/messages/send`
+  - `GET /api/students`, `GET /api/students/{id}`
+  - `GET /api/today/dashboard` (absences/tasks/safeguarding/failures)
+  - `GET/PUT /api/settings/school`, `GET/PUT /api/settings/policy`, `GET /api/integrations/status`
+  - `GET /api/safeguarding/alerts`, `PUT /api/safeguarding/alerts/{id}/ack`
+- Guardian magic link auth is throttled (429 if repeated within 30s per identifier).
+- Guardian auth: JWT secret `Jwt:Secret` (env `ANSEO_JWT_SECRET`), httpOnly cookie `guardian_auth`.
 
 ---
 

@@ -1,0 +1,136 @@
+@page "/interventions/{InstanceId:guid}"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using System.Linq
+
+<PageTitle>Intervention Detail</PageTitle>
+
+@if (_loading)
+{
+    <p>Loading...</p>
+}
+else if (_detail is null)
+{
+    <p class="text-danger">@_error</p>
+}
+else
+{
+    <h3>@_detail.StudentName</h3>
+    <p>Status: @_detail.Instance.Status</p>
+    <p>Current Stage: @_detail.CurrentStage?.StageType ?? "Not set"</p>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <DxButton Text="Advance Stage" Click="@AdvanceStageAsync" Enabled="!_busy" />
+        <DxButton Text="Generate Letter"
+                  Click="@GenerateLetterAsync"
+                  Enabled="CanGenerateLetter && !_busy" />
+        <DxComboBox Data="@_detail.Guardians"
+                    TData="GuardianSummaryDto"
+                    TValue="Guid"
+                    TextField="@nameof(GuardianSummaryDto.FullName)"
+                    ValueField="@nameof(GuardianSummaryDto.GuardianId)"
+                    ValueChanged="@OnGuardianChanged"
+                    Value="@_selectedGuardianId"
+                    NullText="Select guardian" />
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <p class="text-success mt-2">@_message</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <p class="text-danger mt-2">@_error</p>
+    }
+
+    <h4 class="mt-4">Events</h4>
+    <DxGrid Data="@_detail.Events" ShowFilterRow="false" ShowGroupPanel="false">
+        <DxGridDataColumn Field="@nameof(InterventionEventDto.OccurredAtUtc)" Caption="When" />
+        <DxGridDataColumn Field="@nameof(InterventionEventDto.StageName)" Caption="Stage" />
+        <DxGridDataColumn Field="@nameof(InterventionEventDto.EventType)" Caption="Type" />
+    </DxGrid>
+}
+
+@code {
+    [Parameter] public Guid InstanceId { get; set; }
+
+    [Inject] private InterventionsClient InterventionsClient { get; set; } = default!;
+    [Inject] private LettersClient LettersClient { get; set; } = default!;
+
+    private InterventionInstanceDetailDto? _detail;
+    private bool _loading;
+    private bool _busy;
+    private string? _error;
+    private string? _message;
+    private Guid _selectedGuardianId;
+
+    private bool CanGenerateLetter => _detail?.CurrentStage?.LetterTemplateId != null && _selectedGuardianId != Guid.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetailAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        _loading = true;
+        _error = null;
+        _message = null;
+        _detail = await InterventionsClient.GetInstanceAsync(InstanceId);
+        _selectedGuardianId = _detail?.Guardians.FirstOrDefault()?.GuardianId ?? Guid.Empty;
+        _loading = false;
+    }
+
+    private async Task AdvanceStageAsync()
+    {
+        if (_detail == null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+        var updated = await InterventionsClient.AdvanceStageAsync(_detail.Instance.InstanceId);
+        if (updated == null)
+        {
+            _error = "Failed to advance stage.";
+        }
+        else
+        {
+            _message = "Stage advanced.";
+            await LoadDetailAsync();
+        }
+
+        _busy = false;
+    }
+
+    private async Task GenerateLetterAsync()
+    {
+        if (!CanGenerateLetter || _detail == null) return;
+        _busy = true;
+        _error = null;
+        _message = null;
+
+        var request = new GenerateLetterRequest(
+            _detail.Instance.InstanceId,
+            _detail.CurrentStage!.StageId,
+            _selectedGuardianId,
+            "en",
+            new Dictionary<string, string>());
+
+        var artifact = await LettersClient.GenerateLetterAsync(request);
+        if (artifact == null)
+        {
+            _error = "Failed to generate letter.";
+        }
+        else
+        {
+            _message = $"Letter generated (artifact {artifact.ArtifactId}).";
+        }
+
+        _busy = false;
+    }
+
+    private Task OnGuardianChanged(Guid value)
+    {
+        _selectedGuardianId = value;
+        return Task.CompletedTask;
+    }
+}

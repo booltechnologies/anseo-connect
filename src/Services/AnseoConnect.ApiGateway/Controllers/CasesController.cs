@@ -1,4 +1,6 @@
+using AnseoConnect.ApiGateway.Models;
 using AnseoConnect.ApiGateway.Services;
+using AnseoConnect.Contracts.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,14 +43,7 @@ public sealed class CasesController : ControllerBase
 
         var (cases, totalCount) = await _caseQueryService.GetOpenCasesAsync(skip, take, cancellationToken);
 
-        return Ok(new
-        {
-            items = cases,
-            totalCount,
-            skip,
-            take,
-            hasMore = (skip + take) < totalCount
-        });
+        return Ok(new PagedResult<CaseDto>(cases, totalCount, skip, take, (skip + take) < totalCount));
     }
 
     /// <summary>
@@ -65,17 +60,26 @@ public sealed class CasesController : ControllerBase
             return NotFound();
         }
 
-        return Ok(caseDto);
+        var checklist = new List<ChecklistItemDto>();
+        return Ok(new CaseDetailDto(caseDto, checklist));
     }
 
     /// <summary>
-    /// Placeholder for marking checklist item complete (v0.2).
-    /// PATCH /api/cases/{caseId}/checklist/{checklistId}/complete
+    /// Mark a checklist item complete for a case (safeguarding alert or work task).
+    /// PATCH /api/cases/{caseId}/checklist/{checklistId}/items/{itemId}/complete
     /// </summary>
-    [HttpPatch("{caseId}/checklist/{checklistId}/complete")]
-    public IActionResult MarkChecklistComplete(Guid caseId, string checklistId, CancellationToken cancellationToken = default)
+    [HttpPatch("{caseId}/checklist/{checklistId}/items/{itemId}/complete")]
+    public async Task<IActionResult> MarkChecklistItemComplete(
+        Guid caseId,
+        string checklistId,
+        string itemId,
+        [FromBody] CompleteChecklistRequest request,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Step 5 - Implement in v0.2
-        return StatusCode(501, new { error = "Not implemented in v0.1. Will be available in v0.2." });
+        var ok = await _caseQueryService.CompleteChecklistItemAsync(caseId, checklistId, itemId, request.Notes, cancellationToken);
+        if (!ok) return NotFound();
+        return Ok();
     }
 }
+
+public sealed record CompleteChecklistRequest(string? Notes);

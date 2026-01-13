@@ -1,0 +1,27 @@
+@page "/letter-templates"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+<PageTitle>Letter Templates</PageTitle>
+
+<h3>Letter Templates</h3>
+
+<DxGrid Data="@_templates" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(LetterTemplateDto.TemplateKey)" Caption="Key" />
+    <DxGridDataColumn Field="@nameof(LetterTemplateDto.Version)" Caption="Version" />
+    <DxGridDataColumn Field="@nameof(LetterTemplateDto.Status)" Caption="Status" />
+    <DxGridDataColumn Field="@nameof(LetterTemplateDto.LockScope)" Caption="Lock Scope" />
+</DxGrid>
+
+@code {
+    [Inject] private LettersClient Client { get; set; } = default!;
+
+    private List<LetterTemplateDto> _templates = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await Client.GetTemplatesAsync();
+        _templates = data ?? new List<LetterTemplateDto>();
+    }
+}
+

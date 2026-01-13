@@ -1,0 +1,60 @@
+@page "/engagement"
+@attribute [Authorize(Roles = "Admin")]
+@using DevExpress.Blazor
+@inject HttpClient Http
+
+<PageTitle>Engagement Dashboard</PageTitle>
+
+<h3>Engagement Dashboard</h3>
+
+<div class="alert alert-success">
+    Placeholder for reachability metrics, opens/clicks, and unreachable queue.
+</div>
+
+<DxTabs>
+    <DxTab Text="Overview">
+        <DxGrid Data="OverviewRows">
+            <Columns>
+                <DxGridDataColumn FieldName="Channel" Caption="Channel" />
+                <DxGridDataColumn FieldName="Delivered" Caption="Delivered" />
+                <DxGridDataColumn FieldName="Failed" Caption="Failed" />
+                <DxGridDataColumn FieldName="Engaged" Caption="Replied/Engaged" />
+            </Columns>
+        </DxGrid>
+    </DxTab>
+    <DxTab Text="Unreachable">
+        <DxGrid Data="UnreachableRows" ShowFilterRow="true">
+            <Columns>
+                <DxGridDataColumn FieldName="GuardianName" Caption="Guardian" />
+                <DxGridDataColumn FieldName="Channel" Caption="Channel" />
+                <DxGridDataColumn FieldName="FailureCount" Caption="Failures" />
+            </Columns>
+        </DxGrid>
+    </DxTab>
+</DxTabs>
+
+@code {
+    private record OverviewRow(string Channel, int Delivered, int Failed, int Engaged);
+    private record UnreachableRow(string GuardianName, string Channel, int FailureCount);
+
+    private IReadOnlyList<OverviewRow> OverviewRows { get; set; } = Array.Empty<OverviewRow>();
+    private IReadOnlyList<UnreachableRow> UnreachableRows { get; set; } = Array.Empty<UnreachableRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await Http.GetFromJsonAsync<OverviewResponse>("api/engagement/overview");
+        if (data != null)
+        {
+            OverviewRows = data.grouped
+                .Select(g => new OverviewRow(g.EventType, g.EventType is "DELIVERED" ? g.Count : 0, g.EventType is "FAILED" ? g.Count : 0, g.EventType is "REPLIED" ? g.Count : 0))
+                .ToList();
+            UnreachableRows = data.unreachable
+                .Select(u => new UnreachableRow(u.GuardianId.ToString(), u.Channel, u.TotalFailed))
+                .ToList();
+        }
+    }
+
+    private sealed record OverviewResponse(List<Grouped> grouped, List<Unreachable> unreachable);
+    private sealed record Grouped(string EventType, int Count);
+    private sealed record Unreachable(Guid GuardianId, string Channel, int TotalFailed);
+}

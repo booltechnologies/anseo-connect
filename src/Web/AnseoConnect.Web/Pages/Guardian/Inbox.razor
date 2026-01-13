@@ -1,0 +1,25 @@
+@page "/guardian/inbox"
+@attribute [Authorize(Roles = "Guardian")]
+@inject HttpClient Http
+
+<PageTitle>Inbox</PageTitle>
+
+<h3>Guardian Inbox</h3>
+
+<DxGrid Data="Threads" ShowFilterRow="true">
+    <Columns>
+        <DxGridDataColumn FieldName="Subject" Caption="Subject" />
+        <DxGridDataColumn FieldName="LastActivity" Caption="Last Activity" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record ThreadRow(Guid ThreadId, DateTimeOffset LastActivityUtc, Guid StudentId);
+    private IReadOnlyList<ThreadRow> Threads { get; set; } = Array.Empty<ThreadRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<ThreadRow>>("api/guardian/threads");
+        Threads = items ?? new List<ThreadRow>();
+    }
+}

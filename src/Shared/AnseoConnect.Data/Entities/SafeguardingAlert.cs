@@ -17,6 +17,9 @@ public sealed class SafeguardingAlert : SchoolEntity
     public string? ReviewedBy { get; set; }
     public string? ReviewNotes { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? AcknowledgedAtUtc { get; set; }
+    public string? RoutedToUserIds { get; set; } // JSON array of recipients
+    public string? ChecklistProgress { get; set; } // JSON progress blob
 
     public Case? Case { get; set; }
 }

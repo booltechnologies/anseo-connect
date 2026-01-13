@@ -1,0 +1,61 @@
+@page "/evidence/{caseId:guid}"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+
+<PageTitle>Evidence Packs</PageTitle>
+
+<h3>Evidence Packs for Case</h3>
+
+<DxGrid Data="@_packs" ShowFilterRow="true" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(EvidencePackDto.GeneratedAtUtc)" Caption="Generated" />
+    <DxGridDataColumn Field="@nameof(EvidencePackDto.DateRangeStart)" Caption="Date Range Start" />
+    <DxGridDataColumn Field="@nameof(EvidencePackDto.DateRangeEnd)" Caption="Date Range End" />
+    <DxGridDataColumn Field="@nameof(EvidencePackDto.GenerationPurpose)" Caption="Purpose" />
+    <DxGridDataColumn Field="@nameof(EvidencePackDto.ContentHash)" Caption="Content Hash" />
+    <DxGridCommandColumn>
+        <DxGridCommandColumnCustomButton IconCssClass="dx-icon-download" Click="@DownloadPdf" />
+        <DxGridCommandColumnCustomButton IconCssClass="dx-icon-check" Click="@VerifyIntegrity" />
+    </DxGridCommandColumn>
+</DxGrid>
+
+<DxButton Text="Generate New Pack" NavigateUrl="@($"/evidence/generate/{CaseId}")" />
+
+@if (_verificationResult != null)
+{
+    <DxPopup @bind-Visible="@_showVerification" HeaderText="Integrity Verification">
+        <BodyTemplate>
+            <p>Verification Result: @(_verificationResult.IsValid ? "Valid" : "Invalid")</p>
+        </BodyTemplate>
+    </DxPopup>
+}
+
+@code {
+    [Parameter] public Guid CaseId { get; set; }
+    [Inject] private EvidenceClient Client { get; set; } = default!;
+
+    private List<EvidencePackDto> _packs = new();
+    private IntegrityVerificationResult? _verificationResult;
+    private bool _showVerification = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPacks();
+    }
+
+    private async Task LoadPacks()
+    {
+        _packs = await Client.ListEvidencePacksAsync(CaseId);
+    }
+
+    private void DownloadPdf(EvidencePackDto pack)
+    {
+        // Navigate to download URL
+    }
+
+    private async Task VerifyIntegrity(EvidencePackDto pack)
+    {
+        var isValid = await Client.VerifyIntegrityAsync(CaseId, pack.EvidencePackId);
+        _verificationResult = new IntegrityVerificationResult { IsValid = isValid, PackId = pack.EvidencePackId };
+        _showVerification = true;
+    }
+}

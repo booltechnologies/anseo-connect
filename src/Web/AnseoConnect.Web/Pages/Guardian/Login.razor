@@ -1,0 +1,24 @@
+@page "/guardian/login"
+
+<PageTitle>Guardian Login</PageTitle>
+
+<h3>Guardian Login</h3>
+<p>Magic-link login placeholder. Enter your email or mobile to receive a one-time link.</p>
+
+<DxFormLayout>
+    <DxFormLayoutItem Caption="Email or Mobile">
+        <DxTextBox @bind-Text="Identifier" />
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<DxButton Text="Send Magic Link" Click="SendLink" />
+
+@code {
+    private string Identifier { get; set; } = string.Empty;
+
+    private Task SendLink()
+    {
+        // TODO: call /api/guardian/auth/magic-link
+        return Task.CompletedTask;
+    }
+}

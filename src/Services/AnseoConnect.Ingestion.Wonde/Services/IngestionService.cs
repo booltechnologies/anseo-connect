@@ -6,6 +6,8 @@ using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Ingestion.Wonde.Client;
 using AnseoConnect.Shared;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using Task = System.Threading.Tasks.Task;
 
 namespace AnseoConnect.Ingestion.Wonde.Services;
 
@@ -75,6 +77,18 @@ public sealed class IngestionService
             StartTimeUtc = startTime
         };
 
+        var syncLog = new IngestionSyncLog
+        {
+            TenantId = school.TenantId,
+            SchoolId = school.SchoolId,
+            Source = "WONDE",
+            StartedAtUtc = startTime,
+            Status = "RUNNING"
+        };
+
+        _dbContext.IngestionSyncLogs.Add(syncLog);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         try
         {
             // Ingest students
@@ -108,6 +122,15 @@ public sealed class IngestionService
             result.Duration = result.EndTimeUtc - result.StartTimeUtc;
             result.Success = true;
 
+            syncLog.CompletedAtUtc = result.EndTimeUtc;
+            syncLog.Status = "SUCCEEDED";
+            syncLog.RecordsProcessed = result.StudentCount + result.GuardianCount + result.MarkCount;
+            syncLog.ErrorCount = 0;
+            syncLog.MismatchCount = 0;
+            syncLog.Notes = $"Students:{result.StudentCount} Guardians:{result.GuardianCount} Marks:{result.MarkCount}";
+            school.SyncStatus = SyncStatus.Healthy;
+            school.SyncErrorCount = 0;
+
             // Update LastSyncUtc on school entity for incremental sync
             school.LastSyncUtc = DateTimeOffset.UtcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -135,6 +158,15 @@ public sealed class IngestionService
             result.Duration = result.EndTimeUtc - result.StartTimeUtc;
             result.Success = false;
             result.ErrorMessage = ex.Message;
+
+            syncLog.CompletedAtUtc = result.EndTimeUtc;
+            syncLog.Status = "FAILED";
+            syncLog.ErrorCount = syncLog.ErrorCount + 1;
+            syncLog.Notes = ex.Message;
+            school.SyncStatus = SyncStatus.Failed;
+            school.SyncErrorCount += 1;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogError(ex, "Ingestion failed for school {SchoolId}, date {Date}", schoolId, date);
             throw;
@@ -347,7 +379,8 @@ public sealed class IngestionService
                         Session = session,
                         Status = status,
                         ReasonCode = reasonCode,
-                        Source = "WONDE"
+                        Source = "WONDE",
+                        RawPayloadJson = JsonSerializer.Serialize(wondeAtt)
                     };
                     _dbContext.AttendanceMarks.Add(existing);
                 }
@@ -356,6 +389,7 @@ public sealed class IngestionService
                     existing.Status = status;
                     existing.ReasonCode = reasonCode;
                     existing.Source = "WONDE";
+                    existing.RawPayloadJson = JsonSerializer.Serialize(wondeAtt);
                 }
 
                 upserted++;

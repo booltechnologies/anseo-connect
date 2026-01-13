@@ -13,6 +13,7 @@ builder.Services.AddScoped<SessionState>();
 builder.Services.AddScoped<ClientTokenProvider>();
 builder.Services.AddScoped<IClientTokenProvider>(sp => sp.GetRequiredService<ClientTokenProvider>());
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+builder.Services.AddSingleton<AnseoConnect.Web.Services.NotificationHubClient>();
 
 builder.Services.AddAnseoConnectApiClients(options =>
 {

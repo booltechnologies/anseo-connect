@@ -1,0 +1,27 @@
+@page "/guardian/consent"
+@attribute [Authorize(Roles = "Guardian")]
+@inject HttpClient Http
+
+<PageTitle>Consent</PageTitle>
+
+<h3>Consent</h3>
+<p>Manage consent per channel.</p>
+
+<DxGrid Data="Consents">
+    <Columns>
+        <DxGridDataColumn FieldName="Channel" Caption="Channel" />
+        <DxGridDataColumn FieldName="State" Caption="State" />
+        <DxGridDataColumn FieldName="Source" Caption="Source" />
+    </Columns>
+</DxGrid>
+
+@code {
+    private record ConsentRow(string Channel, string State, string Source, DateTimeOffset? LastUpdatedUtc);
+    private IReadOnlyList<ConsentRow> Consents { get; set; } = Array.Empty<ConsentRow>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var items = await Http.GetFromJsonAsync<List<ConsentRow>>("api/guardian/consent");
+        Consents = items ?? new List<ConsentRow>();
+    }
+}

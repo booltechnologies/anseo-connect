@@ -6,8 +6,8 @@ namespace AnseoConnect.Client;
 
 public sealed class MessagesClient : ApiClientBase
 {
-    public MessagesClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<MessagesClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public MessagesClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<MessagesClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 
@@ -33,42 +33,18 @@ public sealed class MessagesClient : ApiClientBase
         if (studentId.HasValue) query += $"&studentId={studentId.Value}";
 
         var result = await GetOrDefaultAsync<PagedResult<MessageSummary>>(query, cancellationToken);
-        if (result != null)
-        {
-            return result;
-        }
-
-        var all = SampleData.Messages.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(channel)) all = all.Where(m => string.Equals(m.Channel, channel, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(status)) all = all.Where(m => string.Equals(m.Status, status, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(messageType)) all = all.Where(m => string.Equals(m.MessageType, messageType, StringComparison.OrdinalIgnoreCase));
-        if (failedOnly.HasValue && failedOnly.Value) all = all.Where(m => string.Equals(m.Status, "Failed", StringComparison.OrdinalIgnoreCase));
-        if (studentId.HasValue) all = all.Where(m => m.StudentId == studentId.Value);
-        if (start.HasValue) all = all.Where(m => m.CreatedAtUtc >= start.Value);
-        if (end.HasValue) all = all.Where(m => m.CreatedAtUtc <= end.Value);
-
-        var list = all.ToList();
-        var items = list.Skip(skip).Take(take).ToList();
-        var totalCount = list.Count;
-        return new PagedResult<MessageSummary>(items, totalCount, skip, take, (skip + take) < totalCount);
+        return result ?? new PagedResult<MessageSummary>(Array.Empty<MessageSummary>(), 0, skip, take, false);
     }
 
     public async Task<MessageDetail?> GetMessageAsync(Guid messageId, CancellationToken cancellationToken = default)
     {
         var result = await GetOrDefaultAsync<MessageDetail>($"api/messages/{messageId}", cancellationToken);
-        return result ?? SampleData.FindMessage(messageId);
+        return result;
     }
 
     public async Task<bool> SendMessageAsync(MessageComposeRequest request, CancellationToken cancellationToken = default)
     {
         var response = await PostOrDefaultAsync<MessageComposeRequest, object>("api/messages/send", request, cancellationToken);
-        if (response != null)
-        {
-            return true;
-        }
-
-        // Stubbed add when API is unavailable
-        SampleData.AddMessage(request);
-        return true;
+        return response != null;
     }
 }

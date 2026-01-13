@@ -1,7 +1,9 @@
+using System.Text.Json;
 using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using AnseoConnect.Data.MultiTenancy;
 using Microsoft.EntityFrameworkCore;
+using Task = System.Threading.Tasks.Task;
 
 namespace AnseoConnect.Workflow.Services;
 
@@ -13,15 +15,18 @@ public sealed class CaseService
     private readonly AnseoConnectDbContext _dbContext;
     private readonly ILogger<CaseService> _logger;
     private readonly ITenantContext _tenantContext;
+    private readonly MtssTierService? _tierService;
 
     public CaseService(
         AnseoConnectDbContext dbContext,
         ILogger<CaseService> logger,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        MtssTierService? tierService = null)
     {
         _dbContext = dbContext;
         _logger = logger;
         _tenantContext = tenantContext;
+        _tierService = tierService;
     }
 
     /// <summary>
@@ -106,13 +111,153 @@ public sealed class CaseService
             return false;
         }
 
-        caseEntity.Tier = 2;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        // Use MtssTierService if available
+        if (_tierService != null)
+        {
+            var evaluation = await _tierService.EvaluateTierAsync(caseEntity.StudentId, caseId, cancellationToken);
+            var rationaleJson = JsonSerializer.Serialize(new
+            {
+                evaluation.TriggeredConditions,
+                evaluation.AttendancePercent,
+                ChecklistId = checklistId
+            });
+
+            await _tierService.AssignTierAsync(
+                caseId,
+                2,
+                "AUTO_ESCALATED",
+                rationaleJson,
+                null,
+                cancellationToken);
+        }
+        else
+        {
+            caseEntity.Tier = 2;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         await AddTimelineEventAsync(caseId, "TIER_2_ESCALATED", checklistId, null, cancellationToken);
 
         _logger.LogInformation("Escalated case {CaseId} to Tier 2", caseId);
 
+        return true;
+    }
+
+    /// <summary>
+    /// Escalates a case to Tier 3. Requires evidence pack (optional) and logs timeline.
+    /// </summary>
+    public async Task<bool> EscalateToTier3Async(
+        Guid caseId,
+        string reason,
+        string? checklistId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var caseEntity = await _dbContext.Cases
+            .Where(c => c.CaseId == caseId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (caseEntity == null || caseEntity.Status != "OPEN" || caseEntity.Tier >= 3)
+        {
+            return false;
+        }
+
+        // Use MtssTierService if available
+        if (_tierService != null)
+        {
+            var evaluation = await _tierService.EvaluateTierAsync(caseEntity.StudentId, caseId, cancellationToken);
+            var rationaleJson = JsonSerializer.Serialize(new
+            {
+                evaluation.TriggeredConditions,
+                evaluation.AttendancePercent,
+                Reason = reason,
+                ChecklistId = checklistId
+            });
+
+            await _tierService.AssignTierAsync(
+                caseId,
+                3,
+                "AUTO_ESCALATED",
+                rationaleJson,
+                null,
+                cancellationToken);
+        }
+        else
+        {
+            caseEntity.Tier = 3;
+            caseEntity.EscalatedAtUtc = DateTimeOffset.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        await AddTimelineEventAsync(caseId, "TIER_3_ESCALATED", reason, null, cancellationToken);
+
+        _logger.LogInformation("Escalated case {CaseId} to Tier 3", caseId);
+        return true;
+    }
+
+    /// <summary>
+    /// Marks a checklist item complete for the latest safeguarding alert or work task on the case that matches the checklistId.
+    /// </summary>
+    public async Task<bool> CompleteChecklistItemAsync(
+        Guid caseId,
+        string checklistId,
+        string itemId,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _dbContext.SafeguardingAlerts
+            .Where(a => a.CaseId == caseId && a.ChecklistId == checklistId)
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var workTask = alert == null
+            ? await _dbContext.WorkTasks
+                .Where(t => t.CaseId == caseId && t.ChecklistId == checklistId && t.Status == "OPEN")
+                .OrderByDescending(t => t.CreatedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken)
+            : null;
+
+        if (alert == null && workTask == null)
+        {
+            _logger.LogWarning("No checklist found for case {CaseId} checklist {ChecklistId}", caseId, checklistId);
+            return false;
+        }
+
+        var existing = await _dbContext.ChecklistCompletions
+            .FirstOrDefaultAsync(c =>
+                c.CaseId == caseId &&
+                c.ChecklistId == checklistId &&
+                c.ItemId == itemId,
+                cancellationToken);
+
+        if (existing == null)
+        {
+            existing = new ChecklistCompletion
+            {
+                ChecklistCompletionId = Guid.NewGuid(),
+                CaseId = caseId,
+                ChecklistId = checklistId,
+                ItemId = itemId,
+                CompletedAtUtc = DateTimeOffset.UtcNow,
+                CompletedByUserId = null,
+                Notes = notes,
+                AlertId = alert?.AlertId,
+                WorkTaskId = workTask?.WorkTaskId
+            };
+            _dbContext.ChecklistCompletions.Add(existing);
+        }
+        else
+        {
+            existing.CompletedAtUtc = DateTimeOffset.UtcNow;
+            existing.CompletedByUserId = null;
+            existing.Notes = notes;
+            existing.AlertId = alert?.AlertId;
+            existing.WorkTaskId = workTask?.WorkTaskId;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await AddTimelineEventAsync(caseId, "CHECKLIST_ITEM_COMPLETED", $"{checklistId}:{itemId}", null, cancellationToken);
+
+        _logger.LogInformation("Completed checklist item {ItemId} for case {CaseId} checklist {ChecklistId}", itemId, caseId, checklistId);
         return true;
     }
 }

@@ -11,7 +11,7 @@
     <DxSpinEdit @bind-Value="TierFilter" Min="1" Max="3" NullText="Tier" />
     <DxTextBox @bind-Text="YearFilter" NullText="Year group" />
     <DxTextBox @bind-Text="RoleFilter" NullText="Assigned role" />
-    <DxCheckBox @bind-Value="OverdueFilter" Text="Overdue only" />
+    <DxCheckBox TValue="bool" @bind-Checked="OverdueFilter" Text="Overdue only" />
     <DxButton Text="Apply filters" Click="ApplyFilters" />
 </div>
 
@@ -26,7 +26,7 @@ else
             FilterRowVisible="true"
             SelectionMode="GridSelectionMode.Single"
             SelectedDataItem="@Selected"
-            SelectedDataItemChanged="selected => Selected = selected">
+            SelectedDataItemChanged="@OnSelectedChanged">
         <Columns>
             <DxGridDataColumn FieldName="@nameof(CaseDto.StudentName)" Caption="Student" />
             <DxGridDataColumn FieldName="@nameof(CaseDto.CaseType)" Caption="Type" />
@@ -53,7 +53,7 @@ else
     private int? TierFilter { get; set; }
     private string? YearFilter { get; set; }
     private string? RoleFilter { get; set; }
-    private bool? OverdueFilter { get; set; }
+    private bool OverdueFilter { get; set; }
     private List<string> Statuses { get; set; } = new() { "OPEN", "CLOSED" };
     private List<string> Types { get; set; } = new() { "ATTENDANCE", "SAFEGUARDING" };
 
@@ -91,5 +91,11 @@ else
     {
         PageIndex = 0;
         await LoadPage();
+    }
+
+    private Task OnSelectedChanged(object? selected)
+    {
+        Selected = selected as CaseDto;
+        return Task.CompletedTask;
     }
 }

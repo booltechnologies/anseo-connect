@@ -1,0 +1,117 @@
+@page "/scheduled-reports"
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using System.Linq
+
+<PageTitle>Scheduled Reports</PageTitle>
+
+<h3>Scheduled Reports</h3>
+
+<DxGrid Data="@_reports" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(ReportDefinitionDto.Name)" Caption="Name" />
+    <DxGridDataColumn Field="@nameof(ReportDefinitionDto.ReportType)" Caption="Type" />
+    <DxGridDataColumn Field="@nameof(ReportDefinitionDto.ScheduleCron)" Caption="Schedule" />
+    <DxGridDataColumn Field="@nameof(ReportDefinitionDto.IsActive)" Caption="Active" />
+    <DxGridDataColumn Caption="Actions">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (ReportDefinitionDto)context.DataItem;
+            }
+            <DxButton Text="Run Now" Click="@(() => RunNowAsync(row.DefinitionId))" Enabled="!_busy" />
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+</DxGrid>
+
+<h4 class="mt-4">Runs</h4>
+<DxGrid Data="@_runs" ShowFilterRow="false" ShowGroupPanel="false">
+    <DxGridDataColumn Field="@nameof(ReportRunDto.StartedAtUtc)" Caption="Started" />
+    <DxGridDataColumn Field="@nameof(ReportRunDto.CompletedAtUtc)" Caption="Completed" />
+    <DxGridDataColumn Field="@nameof(ReportRunDto.Status)" Caption="Status" />
+    <DxGridDataColumn Field="@nameof(ReportRunDto.ErrorMessage)" Caption="Error" />
+    <DxGridDataColumn Field="@nameof(ReportRunDto.DefinitionId)" Caption="Report">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (ReportRunDto)context.DataItem;
+            }
+            @GetDefinitionName(row.DefinitionId)
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+    <DxGridDataColumn Caption="Actions">
+        <CellDisplayTemplate Context="context">
+            @{
+                var row = (ReportRunDto)context.DataItem;
+            }
+            if (row.ArtifactId.HasValue)
+            {
+                <DxButton Text="Download" Click="@(() => DownloadAsync(row.ArtifactId!.Value))" Enabled="!_busy" />
+            }
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
+</DxGrid>
+
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <p class="text-success mt-2">@_message</p>
+}
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <p class="text-danger mt-2">@_error</p>
+}
+
+@code {
+    [Inject] private ReportsClient Client { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private List<ReportDefinitionDto> _reports = new();
+    private List<ReportRunDto> _runs = new();
+    private bool _busy;
+    private string? _message;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var defs = await Client.GetDefinitionsAsync();
+        _reports = defs ?? new List<ReportDefinitionDto>();
+
+        var runs = await Client.GetRunsAsync();
+        _runs = runs ?? new List<ReportRunDto>();
+    }
+
+    private async Task RunNowAsync(Guid definitionId)
+    {
+        _busy = true;
+        _message = null;
+        _error = null;
+
+        var run = await Client.TriggerRunAsync(definitionId);
+        if (run == null)
+        {
+            _error = "Failed to trigger report.";
+        }
+        else
+        {
+            _message = "Report run triggered.";
+            await LoadDataAsync();
+        }
+
+        _busy = false;
+    }
+
+    private string GetDefinitionName(Guid definitionId)
+    {
+        return _reports.FirstOrDefault(r => r.DefinitionId == definitionId)?.Name ?? definitionId.ToString();
+    }
+
+    private void DownloadAsync(Guid artifactId)
+    {
+        _message = "Download started.";
+        _error = null;
+        Navigation.NavigateTo($"api/reports/artifacts/{artifactId}/download", forceLoad: true);
+    }
+}
+

@@ -6,8 +6,8 @@ namespace AnseoConnect.Client;
 
 public sealed class StudentsClient : ApiClientBase
 {
-    public StudentsClient(HttpClient httpClient, IOptions<ApiClientOptions> options, SampleDataProvider sampleData, ILogger<StudentsClient> logger)
-        : base(httpClient, options, sampleData, logger)
+    public StudentsClient(HttpClient httpClient, IOptions<ApiClientOptions> options, ILogger<StudentsClient> logger)
+        : base(httpClient, options, logger)
     {
     }
 
@@ -26,33 +26,12 @@ public sealed class StudentsClient : ApiClientBase
         if (!string.IsNullOrWhiteSpace(risk)) endpoint += $"&risk={Uri.EscapeDataString(risk)}";
 
         var result = await GetOrDefaultAsync<PagedResult<StudentSummary>>(endpoint, cancellationToken);
-        if (result != null)
-        {
-            return result;
-        }
-
-        var filtered = SampleData.Students.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(query))
-        {
-            filtered = filtered.Where(s => s.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
-        }
-        if (!string.IsNullOrWhiteSpace(year))
-        {
-            filtered = filtered.Where(s => s.YearGroup.Contains(year, StringComparison.OrdinalIgnoreCase));
-        }
-        if (!string.IsNullOrWhiteSpace(risk))
-        {
-            filtered = filtered.Where(s => string.Equals(s.Risk, risk, StringComparison.OrdinalIgnoreCase));
-        }
-
-        var items = filtered.Skip(skip).Take(take).ToList();
-        var totalCount = filtered.Count();
-        return new PagedResult<StudentSummary>(items, totalCount, skip, take, (skip + take) < totalCount);
+        return result ?? new PagedResult<StudentSummary>(Array.Empty<StudentSummary>(), 0, skip, take, false);
     }
 
     public async Task<StudentProfile?> GetStudentAsync(Guid studentId, CancellationToken cancellationToken = default)
     {
         var result = await GetOrDefaultAsync<StudentProfile>($"api/students/{studentId}", cancellationToken);
-        return result ?? SampleData.FindStudent(studentId);
+        return result;
     }
 }

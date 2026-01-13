@@ -4,8 +4,9 @@
 @inject MessagesClient MessagesClient
 @inject StudentsClient StudentsClient
 @inject ConsentClient ConsentClient
-@inject SampleDataProvider SampleData
 @inject SafeguardingClient SafeguardingClient
+@inject NavigationManager NavigationManager
+@inject SettingsClient SettingsClient
 
 <PageTitle>Today</PageTitle>
 
@@ -27,7 +28,7 @@ else
             FilterRowVisible="true"
             SelectionMode="GridSelectionMode.Multiple"
             SelectedDataItems="@SelectedAbsences"
-            SelectedDataItemsChanged="OnAbsencesSelected">
+            SelectedDataItemsChanged="@OnAbsencesSelected">
         <Columns>
             <DxGridDataColumn FieldName="@nameof(AbsenceDto.StudentName)" Caption="Student" />
             <DxGridDataColumn FieldName="@nameof(AbsenceDto.Date)" Caption="Date" />
@@ -82,7 +83,7 @@ else
     </DxGrid>
 
     <h3>Safeguarding quick actions</h3>
-    <DxButton Text="Open safeguarding queue" Click="() => NavigationManager.NavigateTo(\"/safeguarding\")" />
+    <DxButton Text="Open safeguarding queue" Click="OpenSafeguarding" />
     <DxButton Text="Acknowledge first alert" Click="AckFirstSafeguarding" Enabled="Dashboard.SafeguardingAlerts.Any()" />
 }
 
@@ -91,7 +92,7 @@ else
                      StudentId="@ComposeStudentId"
                      GuardianOptions="@ComposeGuardians"
                      ConsentStatus="@ComposeConsent"
-                     TemplateOptions="@SampleData.Templates"
+                     TranslationReviewRequired="@TranslationReviewRequired"
                      OnSend="SendMessage" />
 
 @code {
@@ -101,10 +102,13 @@ else
     private List<AbsenceDto> SelectedAbsences { get; set; } = new();
     private ConsentStatusDto? ComposeConsent { get; set; }
     private IReadOnlyList<GuardianContact> ComposeGuardians { get; set; } = Array.Empty<GuardianContact>();
+    private bool TranslationReviewRequired { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Dashboard = await TodayClient.GetDashboardAsync();
+        var settings = await SettingsClient.GetSchoolSettingsAsync();
+        TranslationReviewRequired = settings.TranslationReviewRequired;
     }
 
     private async void ShowCompose(Guid? studentId)
@@ -142,9 +146,11 @@ else
         await MessagesClient.SendMessageAsync(request);
     }
 
-    private Task OnAbsencesSelected(IEnumerable<AbsenceDto> selected)
+    private void OpenSafeguarding() => NavigationManager.NavigateTo("/safeguarding");
+
+    private Task OnAbsencesSelected(IReadOnlyList<object> selected)
     {
-        SelectedAbsences = selected.ToList();
+        SelectedAbsences = selected.OfType<AbsenceDto>().ToList();
         return Task.CompletedTask;
     }
 

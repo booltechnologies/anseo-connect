@@ -4,9 +4,11 @@ using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Shared;
+using AnseoConnect.ApiGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Task = System.Threading.Tasks.Task;
 
 namespace AnseoConnect.ApiGateway.Controllers;
 
@@ -24,17 +26,20 @@ public sealed class SendGridWebhookController : ControllerBase
     private readonly IMessageBus _messageBus;
     private readonly ILogger<SendGridWebhookController> _logger;
     private readonly ITenantContext _tenantContext;
+    private readonly NotificationBroadcaster _broadcaster;
 
     public SendGridWebhookController(
         AnseoConnectDbContext dbContext,
         IMessageBus messageBus,
         ILogger<SendGridWebhookController> logger,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        NotificationBroadcaster broadcaster)
     {
         _dbContext = dbContext;
         _messageBus = messageBus;
         _logger = logger;
         _tenantContext = tenantContext;
+        _broadcaster = broadcaster;
     }
 
     /// <summary>
@@ -204,6 +209,14 @@ public sealed class SendGridWebhookController : ControllerBase
                 eventType);
         }
 
+            // Engagement tracking for opens/clicks and failures
+            await RecordEngagementAsync(
+                guardian,
+                message,
+                eventType,
+                timestamp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(timestamp.Value) : DateTimeOffset.UtcNow,
+                cancellationToken);
+
         // Publish delivery event (only for delivery status events)
         if (mappedStatus != null && IsDeliveryStatusEvent(eventType))
         {
@@ -233,6 +246,14 @@ public sealed class SendGridWebhookController : ControllerBase
                 message.MessageId,
                 mappedStatus);
         }
+
+            await _broadcaster.BroadcastEngagementAsync(guardian.TenantId, new
+            {
+                guardianId = guardian.GuardianId,
+                messageId = message.MessageId,
+                eventType,
+                status = mappedStatus
+            }, cancellationToken);
     }
 
     private static string? MapSendGridEventToStatus(string? eventType)
@@ -260,5 +281,58 @@ public sealed class SendGridWebhookController : ControllerBase
             "processed" => true,
             _ => false // opened, clicked, spamreport, etc. are tracking events
         };
+    }
+
+    private async Task RecordEngagementAsync(Guardian guardian, Message message, string eventType, DateTimeOffset occurredAt, CancellationToken ct)
+    {
+        var evt = new EngagementEvent
+        {
+            EventId = Guid.NewGuid(),
+            TenantId = guardian.TenantId,
+            MessageId = message.MessageId,
+            GuardianId = guardian.GuardianId,
+            EventType = eventType.ToUpperInvariant(),
+            OccurredAtUtc = occurredAt
+        };
+        _dbContext.EngagementEvents.Add(evt);
+
+        var reachability = await _dbContext.GuardianReachabilities
+            .FirstOrDefaultAsync(r => r.TenantId == guardian.TenantId && r.SchoolId == guardian.SchoolId && r.GuardianId == guardian.GuardianId && r.Channel == "EMAIL", ct);
+        if (reachability == null)
+        {
+            reachability = new GuardianReachability
+            {
+                ReachabilityId = Guid.NewGuid(),
+                TenantId = guardian.TenantId,
+                SchoolId = guardian.SchoolId,
+                GuardianId = guardian.GuardianId,
+                Channel = "EMAIL",
+                LastUpdatedUtc = DateTimeOffset.UtcNow
+            };
+            _dbContext.GuardianReachabilities.Add(reachability);
+        }
+
+        switch (eventType.ToLowerInvariant())
+        {
+            case "delivered":
+                reachability.TotalDelivered += 1;
+                break;
+            case "processed":
+                reachability.TotalSent += 1;
+                break;
+            case "bounce":
+            case "dropped":
+                reachability.TotalFailed += 1;
+                break;
+            case "open":
+            case "opened":
+            case "click":
+            case "clicked":
+                reachability.TotalReplied += 1; // reuse as engagement count
+                break;
+        }
+
+        reachability.LastUpdatedUtc = DateTimeOffset.UtcNow;
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

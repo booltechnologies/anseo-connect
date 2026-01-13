@@ -4,16 +4,17 @@
 
 <PageTitle>Settings</PageTitle>
 
-@if (SchoolSettings is null)
+@if (!Loaded)
 {
     <p>Loading...</p>
 }
 else
 {
     <div class="summary-row">
-        <SummaryTile Label="Timezone" Value="@SchoolSettings?.Timezone" />
-        <SummaryTile Label="Channel order" Value="@SchoolSettings?.ChannelOrder" />
+        <SummaryTile Label="Timezone" Value="@SchoolSettings.Timezone" />
+        <SummaryTile Label="Channel order" Value="@SchoolSettings.ChannelOrder" />
         <SummaryTile Label="Policy pack" Value="@(PolicyPack?.PackName ?? string.Empty)" Hint="@PolicyPack?.Version" />
+        <SummaryTile Label="Translation review" Value="@(SchoolSettings.TranslationReviewRequired ? "Required" : "Optional")" />
     </div>
 
     <h3>School settings</h3>
@@ -32,6 +33,9 @@ else
         </DxFormLayoutItem>
         <DxFormLayoutItem Caption="Policy pack">
             <DxTextBox @bind-Text="SchoolSettings.PolicyPackVersion" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Translation review required">
+            <DxCheckBox TValue="bool" @bind-Checked="SchoolSettings.TranslationReviewRequired" />
         </DxFormLayoutItem>
         <DxFormLayoutItem>
             <DxButton Text="Save" Click="SaveSettings" />
@@ -68,7 +72,8 @@ else
 }
 
 @code {
-    private SchoolSettingsDto? SchoolSettings { get; set; }
+    private bool Loaded { get; set; }
+    private SchoolSettingsDto SchoolSettings { get; set; } = new();
     private PolicyPackAssignmentDto? PolicyPack { get; set; }
     private IReadOnlyList<IntegrationStatusDto> Integrations { get; set; } = Array.Empty<IntegrationStatusDto>();
     private string SaveMessage { get; set; } = string.Empty;
@@ -79,6 +84,7 @@ else
         SchoolSettings = await SettingsClient.GetSchoolSettingsAsync();
         PolicyPack = await SettingsClient.GetPolicyPackAsync();
         Integrations = await SettingsClient.GetIntegrationsAsync();
+        Loaded = true;
     }
 
     private async Task SaveSettings()
