@@ -87,6 +87,12 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
     public DbSet<StudentClassEnrollment> StudentClassEnrollments => Set<StudentClassEnrollment>();
     public DbSet<ReasonCodeMapping> ReasonCodeMappings => Set<ReasonCodeMapping>();
     public DbSet<SchoolSyncState> SchoolSyncStates => Set<SchoolSyncState>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserPermissionOverride> UserPermissionOverrides => Set<UserPermissionOverride>();
+    public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<AlertRule> AlertRules => Set<AlertRule>();
+    public DbSet<AlertInstance> AlertInstances => Set<AlertInstance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -968,6 +974,160 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
         modelBuilder.Entity<IngestionSyncLog>()
             .Property(x => x.ErrorRateThreshold)
             .HasColumnType("decimal(18,2)");
+
+        // Permission entities (Permission is NOT tenant-scoped - global)
+        modelBuilder.Entity<Permission>().HasKey(x => x.PermissionId);
+        modelBuilder.Entity<Permission>()
+            .HasIndex(x => x.Code)
+            .IsUnique()
+            .HasDatabaseName("IX_Permissions_Code");
+        modelBuilder.Entity<Permission>()
+            .Property(x => x.Code)
+            .HasMaxLength(128);
+        modelBuilder.Entity<Permission>()
+            .Property(x => x.DisplayName)
+            .HasMaxLength(256);
+        modelBuilder.Entity<Permission>()
+            .Property(x => x.Category)
+            .HasMaxLength(64);
+        modelBuilder.Entity<Permission>()
+            .Property(x => x.Description)
+            .HasMaxLength(512);
+
+        modelBuilder.Entity<RolePermission>().HasKey(x => x.RolePermissionId);
+        modelBuilder.Entity<RolePermission>()
+            .HasIndex(x => new { x.TenantId, x.RoleName, x.PermissionId, x.SchoolId })
+            .IsUnique()
+            .HasDatabaseName("IX_RolePermissions_Tenant_Role_Permission_School");
+        modelBuilder.Entity<RolePermission>()
+            .HasIndex(x => new { x.TenantId, x.RoleName })
+            .HasDatabaseName("IX_RolePermissions_Tenant_Role");
+        modelBuilder.Entity<RolePermission>()
+            .Property(x => x.RoleName)
+            .HasMaxLength(256);
+        modelBuilder.Entity<RolePermission>()
+            .Property(x => x.GrantedBy)
+            .HasMaxLength(256);
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(x => x.Permission)
+            .WithMany()
+            .HasForeignKey(x => x.PermissionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<UserPermissionOverride>().HasKey(x => x.OverrideId);
+        modelBuilder.Entity<UserPermissionOverride>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.UserId, x.PermissionId })
+            .IsUnique()
+            .HasDatabaseName("IX_UserPermissionOverrides_Tenant_School_User_Permission");
+        modelBuilder.Entity<UserPermissionOverride>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.UserId })
+            .HasDatabaseName("IX_UserPermissionOverrides_Tenant_School_User");
+        modelBuilder.Entity<UserPermissionOverride>()
+            .Property(x => x.ModifiedBy)
+            .HasMaxLength(256);
+        modelBuilder.Entity<UserPermissionOverride>()
+            .Property(x => x.Reason)
+            .HasMaxLength(512);
+        modelBuilder.Entity<UserPermissionOverride>()
+            .HasOne(x => x.Permission)
+            .WithMany()
+            .HasForeignKey(x => x.PermissionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // AuditEvent (tenant-scoped)
+        modelBuilder.Entity<AuditEvent>().HasKey(x => x.AuditEventId);
+        modelBuilder.Entity<AuditEvent>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_AuditEvents_Tenant_School_OccurredAt");
+        modelBuilder.Entity<AuditEvent>()
+            .HasIndex(x => new { x.TenantId, x.Action, x.OccurredAtUtc })
+            .HasDatabaseName("IX_AuditEvents_Tenant_Action_OccurredAt");
+        modelBuilder.Entity<AuditEvent>()
+            .HasIndex(x => new { x.TenantId, x.EntityType, x.EntityId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_AuditEvents_Tenant_Entity");
+        modelBuilder.Entity<AuditEvent>()
+            .HasIndex(x => new { x.TenantId, x.ActorId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_AuditEvents_Tenant_Actor");
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.ActorId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.ActorName)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.ActorType)
+            .HasMaxLength(32);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.Action)
+            .HasMaxLength(128);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.EntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.EntityId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.EntityDisplayName)
+            .HasMaxLength(512);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.MetadataJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.IpAddress)
+            .HasMaxLength(128);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.UserAgent)
+            .HasMaxLength(512);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.PreviousEventHash)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AuditEvent>()
+            .Property(x => x.EventHash)
+            .HasMaxLength(256);
+
+        // AlertRule (tenant-scoped)
+        modelBuilder.Entity<AlertRule>().HasKey(x => x.AlertRuleId);
+        modelBuilder.Entity<AlertRule>()
+            .HasIndex(x => new { x.TenantId, x.Category, x.IsEnabled })
+            .HasDatabaseName("IX_AlertRules_Tenant_Category_Enabled");
+        modelBuilder.Entity<AlertRule>()
+            .Property(x => x.Name)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AlertRule>()
+            .Property(x => x.Category)
+            .HasMaxLength(64);
+        modelBuilder.Entity<AlertRule>()
+            .Property(x => x.ConditionJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<AlertRule>()
+            .Property(x => x.Severity)
+            .HasMaxLength(32);
+        modelBuilder.Entity<AlertRule>()
+            .Property(x => x.NotificationChannelsJson)
+            .HasColumnType("nvarchar(max)");
+
+        // AlertInstance (tenant-scoped)
+        modelBuilder.Entity<AlertInstance>().HasKey(x => x.AlertInstanceId);
+        modelBuilder.Entity<AlertInstance>()
+            .HasIndex(x => new { x.TenantId, x.AlertRuleId, x.Status, x.TriggeredAtUtc })
+            .HasDatabaseName("IX_AlertInstances_Tenant_Rule_Status_Triggered");
+        modelBuilder.Entity<AlertInstance>()
+            .HasIndex(x => new { x.TenantId, x.Status, x.TriggeredAtUtc })
+            .HasDatabaseName("IX_AlertInstances_Tenant_Status_Triggered");
+        modelBuilder.Entity<AlertInstance>()
+            .Property(x => x.Status)
+            .HasMaxLength(32);
+        modelBuilder.Entity<AlertInstance>()
+            .Property(x => x.AcknowledgedBy)
+            .HasMaxLength(256);
+        modelBuilder.Entity<AlertInstance>()
+            .Property(x => x.DetailsJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<AlertInstance>()
+            .HasOne(x => x.AlertRule)
+            .WithMany()
+            .HasForeignKey(x => x.AlertRuleId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     public override int SaveChanges()

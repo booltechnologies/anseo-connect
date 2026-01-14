@@ -336,9 +336,29 @@ After completing Steps 1-3:
    ```
 
 2. **Seed Initial Data:**
-   - Create tenant(s) in database
-   - Create school(s) with Wonde IDs
-   - Create test user(s)
+   
+   Use the DataSeeder tool to create development tenant, school, and optionally test users:
+   
+   ```powershell
+   # Basic seeding (tenant and school only)
+   dotnet run --project tools/DataSeeder
+   
+   # With user seeding enabled
+   $env:ANSEO_SEED_USERS="true"
+   dotnet run --project tools/DataSeeder
+   
+   # With custom configuration
+   $env:ANSEO_SEED_TENANT_NAME="My Tenant"
+   $env:ANSEO_SEED_SCHOOL_NAME="My School"
+   $env:ANSEO_SEED_WONDE_SCHOOL_ID="your-wonde-id"
+   $env:ANSEO_SEED_USERS="true"
+   $env:ANSEO_SEED_ADMIN_USERNAME="admin"
+   $env:ANSEO_SEED_ADMIN_PASSWORD="SecurePassword123!"
+   $env:ANSEO_SEED_ADMIN_EMAIL="admin@example.com"
+   dotnet run --project tools/DataSeeder
+   ```
+   
+   See the DataSeeder tool documentation for all available environment variables.
 
 3. **Run Integration Tests:**
    - See `docs/IMPLEMENTATION_STATUS_v0.1.md` for testing checklist

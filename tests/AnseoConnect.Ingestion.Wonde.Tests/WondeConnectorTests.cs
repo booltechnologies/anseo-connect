@@ -1,7 +1,6 @@
 using AnseoConnect.Contracts.SIS;
 using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
-using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Ingestion.Wonde;
 using AnseoConnect.Ingestion.Wonde.Client;
 using AnseoConnect.Shared;
@@ -147,7 +146,7 @@ internal class MockWondeClient : IWondeClient
 
 internal class MockMessageBus : IMessageBus
 {
-    public Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
+    public Task PublishAsync<T>(AnseoConnect.Contracts.Common.MessageEnvelope<T> envelope, CancellationToken cancellationToken = default) where T : notnull
     {
         return Task.CompletedTask;
     }

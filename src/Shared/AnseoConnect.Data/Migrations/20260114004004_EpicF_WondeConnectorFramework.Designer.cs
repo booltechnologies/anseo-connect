@@ -4,6 +4,7 @@ using AnseoConnect.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AnseoConnect.Data.Migrations
 {
     [DbContext(typeof(AnseoConnectDbContext))]
-    partial class AnseoConnectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260114004004_EpicF_WondeConnectorFramework")]
+    partial class EpicF_WondeConnectorFramework
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,102 +24,6 @@ namespace AnseoConnect.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.AlertInstance", b =>
-                {
-                    b.Property<Guid>("AlertInstanceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("AcknowledgedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("AcknowledgedBy")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid>("AlertRuleId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("DetailsJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("TriggeredAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("AlertInstanceId");
-
-                    b.HasIndex("AlertRuleId");
-
-                    b.HasIndex("TenantId", "Status", "TriggeredAtUtc")
-                        .HasDatabaseName("IX_AlertInstances_Tenant_Status_Triggered");
-
-                    b.HasIndex("TenantId", "AlertRuleId", "Status", "TriggeredAtUtc")
-                        .HasDatabaseName("IX_AlertInstances_Tenant_Rule_Status_Triggered");
-
-                    b.ToTable("AlertInstances");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.AlertRule", b =>
-                {
-                    b.Property<Guid>("AlertRuleId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("ConditionJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NotificationChannelsJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("AlertRuleId");
-
-                    b.HasIndex("TenantId", "Category", "IsEnabled")
-                        .HasDatabaseName("IX_AlertRules_Tenant_Category_Enabled");
-
-                    b.ToTable("AlertRules");
-                });
 
             modelBuilder.Entity("AnseoConnect.Data.Entities.AppUser", b =>
                 {
@@ -425,95 +332,6 @@ namespace AnseoConnect.Data.Migrations
                         .HasDatabaseName("IX_AudienceSnapshots_Segment");
 
                     b.ToTable("AudienceSnapshots");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.AuditEvent", b =>
-                {
-                    b.Property<Guid>("AuditEventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("ActorId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("ActorName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("ActorType")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("EntityDisplayName")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<string>("EntityId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("EventHash")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("MetadataJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("OccurredAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("PreviousEventHash")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid?>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("UserAgent")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.HasKey("AuditEventId");
-
-                    b.HasIndex("TenantId", "Action", "OccurredAtUtc")
-                        .HasDatabaseName("IX_AuditEvents_Tenant_Action_OccurredAt");
-
-                    b.HasIndex("TenantId", "ActorId", "OccurredAtUtc")
-                        .HasDatabaseName("IX_AuditEvents_Tenant_Actor");
-
-                    b.HasIndex("TenantId", "SchoolId", "OccurredAtUtc")
-                        .HasDatabaseName("IX_AuditEvents_Tenant_School_OccurredAt");
-
-                    b.HasIndex("TenantId", "EntityType", "EntityId", "OccurredAtUtc")
-                        .HasDatabaseName("IX_AuditEvents_Tenant_Entity");
-
-                    b.ToTable("AuditEvents");
                 });
 
             modelBuilder.Entity("AnseoConnect.Data.Entities.AutomationMetrics", b =>
@@ -2192,44 +2010,6 @@ namespace AnseoConnect.Data.Migrations
                     b.ToTable("OutboxMessages");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.Permission", b =>
-                {
-                    b.Property<Guid>("PermissionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("IsSystemPermission")
-                        .HasColumnType("bit");
-
-                    b.HasKey("PermissionId");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Permissions_Code");
-
-                    b.ToTable("Permissions");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.PlaybookDefinition", b =>
                 {
                     b.Property<Guid>("PlaybookId")
@@ -2645,49 +2425,6 @@ namespace AnseoConnect.Data.Migrations
                         .HasDatabaseName("IX_ReportRuns_Definition_Status");
 
                     b.ToTable("ReportRuns");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.RolePermission", b =>
-                {
-                    b.Property<Guid>("RolePermissionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("GrantedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("GrantedBy")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid>("PermissionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("RoleName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid?>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("RolePermissionId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.HasIndex("TenantId", "RoleName")
-                        .HasDatabaseName("IX_RolePermissions_Tenant_Role");
-
-                    b.HasIndex("TenantId", "RoleName", "PermissionId", "SchoolId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_RolePermissions_Tenant_Role_Permission_School")
-                        .HasFilter("[SchoolId] IS NOT NULL");
-
-                    b.ToTable("RolePermissions");
                 });
 
             modelBuilder.Entity("AnseoConnect.Data.Entities.SafeguardingAlert", b =>
@@ -3535,54 +3272,6 @@ namespace AnseoConnect.Data.Migrations
                     b.ToTable("TranslationCaches");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.UserPermissionOverride", b =>
-                {
-                    b.Property<Guid>("OverrideId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsGrant")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset>("ModifiedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ModifiedBy")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid>("PermissionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<Guid>("SchoolId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("OverrideId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.HasIndex("TenantId", "SchoolId", "UserId")
-                        .HasDatabaseName("IX_UserPermissionOverrides_Tenant_School_User");
-
-                    b.HasIndex("TenantId", "SchoolId", "UserId", "PermissionId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserPermissionOverrides_Tenant_School_User_Permission");
-
-                    b.ToTable("UserPermissionOverrides");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.WorkTask", b =>
                 {
                     b.Property<Guid>("WorkTaskId")
@@ -3813,17 +3502,6 @@ namespace AnseoConnect.Data.Migrations
                     b.ToTable("AppUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.AlertInstance", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.AlertRule", "AlertRule")
-                        .WithMany()
-                        .HasForeignKey("AlertRuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AlertRule");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.Attachment", b =>
                 {
                     b.HasOne("AnseoConnect.Data.Entities.Message", "Message")
@@ -4047,17 +3725,6 @@ namespace AnseoConnect.Data.Migrations
                     b.Navigation("Message");
                 });
 
-            modelBuilder.Entity("AnseoConnect.Data.Entities.RolePermission", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Permission", "Permission")
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Permission");
-                });
-
             modelBuilder.Entity("AnseoConnect.Data.Entities.SafeguardingAlert", b =>
                 {
                     b.HasOne("AnseoConnect.Data.Entities.Case", "Case")
@@ -4221,17 +3888,6 @@ namespace AnseoConnect.Data.Migrations
                     b.Navigation("Case");
 
                     b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("AnseoConnect.Data.Entities.UserPermissionOverride", b =>
-                {
-                    b.HasOne("AnseoConnect.Data.Entities.Permission", "Permission")
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Permission");
                 });
 
             modelBuilder.Entity("AnseoConnect.Data.Entities.WorkTask", b =>

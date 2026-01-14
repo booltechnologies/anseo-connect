@@ -1,0 +1,66 @@
+@page "/admin/ops"
+@using AnseoConnect.Client
+@using AnseoConnect.Data.Entities
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Operations Dashboard</PageTitle>
+
+<h2>Operations Dashboard</h2>
+<p>Monitor system health, alerts, and operational metrics.</p>
+
+@if (_isLoading)
+{
+    <p><em>Loading dashboard data...</em></p>
+}
+else
+{
+    <div class="ops-dashboard">
+        <div class="mb-3">
+            <h3>Active Alerts</h3>
+            @if (_activeAlerts == null || !_activeAlerts.Items.Any())
+            {
+                <p><em>No active alerts.</em></p>
+            }
+            else
+            {
+                <DxGrid Data="@_activeAlerts.Items">
+                    <Columns>
+                        <DxGridDataColumn FieldName="@nameof(AlertInstance.TriggeredAtUtc)" Caption="Triggered" />
+                        <DxGridDataColumn FieldName="@nameof(AlertInstance.Status)" Caption="Status" />
+                    </Columns>
+                </DxGrid>
+            }
+        </div>
+
+        <div class="mb-3">
+            <h3>Health Status</h3>
+            <p><em>Health check aggregation will be displayed here (outbox queue depth, DLQ count, connector status, deliverability metrics)</em></p>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private AlertsClient AlertsClient { get; set; } = null!;
+
+    private PagedResult<AlertInstance>? _activeAlerts;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _activeAlerts = await AlertsClient.GetAlertInstancesAsync(
+                status: "Active",
+                skip: 0,
+                take: 10,
+                cancellationToken: default);
+
+            _isLoading = false;
+        }
+        catch
+        {
+            _isLoading = false;
+            // Error handling would be implemented here
+        }
+    }
+}

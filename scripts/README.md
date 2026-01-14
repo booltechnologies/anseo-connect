@@ -309,9 +309,40 @@ After completing Steps 1-3:
    - Verify all environment variables are set
 
 2. **Seed Initial Data:**
-   - Create tenant(s) in database
-   - Create school(s) with Wonde IDs
-   - Create test user(s) for authentication
+   
+   Use the DataSeeder tool to create development tenant, school, and optionally test users:
+   
+   ```powershell
+   # Basic seeding (tenant and school only)
+   dotnet run --project tools/DataSeeder
+   
+   # With user seeding enabled
+   $env:ANSEO_SEED_USERS="true"
+   dotnet run --project tools/DataSeeder
+   
+   # With custom configuration
+   $env:ANSEO_SEED_TENANT_NAME="My Tenant"
+   $env:ANSEO_SEED_SCHOOL_NAME="My School"
+   $env:ANSEO_SEED_WONDE_SCHOOL_ID="your-wonde-id"
+   $env:ANSEO_SEED_USERS="true"
+   $env:ANSEO_SEED_ADMIN_USERNAME="admin"
+   $env:ANSEO_SEED_ADMIN_PASSWORD="SecurePassword123!"
+   $env:ANSEO_SEED_ADMIN_EMAIL="admin@example.com"
+   dotnet run --project tools/DataSeeder
+   ```
+   
+   **Environment Variables:**
+   - `ANSEO_SQL`: Database connection string (required)
+   - `ANSEO_SEED_TENANT_NAME`: Tenant name (default: "Development Tenant")
+   - `ANSEO_SEED_SCHOOL_NAME`: School name (default: "Development School")
+   - `ANSEO_SEED_WONDE_SCHOOL_ID`: Optional Wonde school ID
+   - `ANSEO_SEED_USERS`: Enable user seeding - set to "true" to enable (default: disabled)
+   - `ANSEO_SEED_ADMIN_USERNAME`: Admin username (default: "admin")
+   - `ANSEO_SEED_ADMIN_PASSWORD`: Admin password (default: "ChangeMe123!")
+   - `ANSEO_SEED_ADMIN_EMAIL`: Admin email (optional)
+   - `ANSEO_SEED_ADMIN_ROLE`: Role to assign to admin user (default: "Principal")
+   
+   **Note:** The DataSeeder tool is idempotent - safe to run multiple times. It will only create data if it doesn't already exist.
 
 3. **Start Services:**
    ```powershell

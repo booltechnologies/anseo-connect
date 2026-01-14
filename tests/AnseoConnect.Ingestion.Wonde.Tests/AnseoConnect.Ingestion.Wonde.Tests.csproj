@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +21,7 @@
     <ProjectReference Include="..\..\src\Services\AnseoConnect.Ingestion.Wonde\AnseoConnect.Ingestion.Wonde.csproj" />
     <ProjectReference Include="..\..\src\Shared\AnseoConnect.Data\AnseoConnect.Data.csproj" />
     <ProjectReference Include="..\..\src\Shared\AnseoConnect.Shared\AnseoConnect.Shared.csproj" />
-    <ProjectReference Include="..\AnseoConnect.IntegrationTests\AnseoConnect.IntegrationTests.csproj" />
+    <ProjectReference Include="..\..\src\Shared\AnseoConnect.Contracts\AnseoConnect.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

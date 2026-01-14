@@ -294,7 +294,7 @@ public sealed class WondeConnector : ISisConnector
             {
                 // Timetable sync is currently a stub - can be enhanced later to store timetable periods
                 result.Success = true;
-                result.Notes = $"Retrieved {timetableResponse.Data.Count} timetable periods (storage not yet implemented)";
+                syncRun.Notes = $"Retrieved {timetableResponse.Data.Count} timetable periods (storage not yet implemented)";
             }
             else
             {
@@ -623,8 +623,8 @@ public sealed class WondeConnector : ISisConnector
                     reasonCode = await _reasonCodeMapper.MapToInternalAsync(
                         ProviderId,
                         providerReasonCode,
-                        school.TenantId,
-                        school.SchoolId,
+                        _tenantContext.TenantId,
+                        _tenantContext.SchoolId ?? Guid.Empty,
                         cancellationToken);
                 }
 

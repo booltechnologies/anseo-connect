@@ -1,0 +1,51 @@
+@page "/admin/permissions"
+@using AnseoConnect.Client
+@using AnseoConnect.Data.Entities
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Permissions Management</PageTitle>
+
+<h2>Permission Matrix</h2>
+<p>Manage role-based permissions for your organization.</p>
+
+@if (_isLoading)
+{
+    <p><em>Loading permissions...</em></p>
+}
+else if (_permissions == null || !_permissions.Any())
+{
+    <p><em>No permissions found.</em></p>
+}
+else
+{
+    <p><em>Permission matrix editor will be implemented here (roles x permissions grid)</em></p>
+    
+    <p><strong>Available Permissions:</strong></p>
+    <ul>
+        @foreach (var permission in _permissions)
+        {
+            <li>@permission.DisplayName (@permission.Code) - @permission.Category</li>
+        }
+    </ul>
+}
+
+@code {
+    [Inject] private PermissionsClient PermissionsClient { get; set; } = null!;
+
+    private List<Permission>? _permissions;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _permissions = await PermissionsClient.GetAllPermissionsAsync(cancellationToken: default);
+            _isLoading = false;
+        }
+        catch
+        {
+            _isLoading = false;
+            // Error handling would be implemented here
+        }
+    }
+}

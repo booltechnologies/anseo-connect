@@ -2,14 +2,19 @@ using AnseoConnect.Data;
 using AnseoConnect.Data.Entities;
 using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Data.Services;
+using AnseoConnect.ApiGateway.Authorization;
+using AnseoConnect.ApiGateway.Health;
 using AnseoConnect.ApiGateway.Middleware;
 using AnseoConnect.ApiGateway.Services;
 using AnseoConnect.Shared;
 using AnseoConnect.Workflow.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Linq;
@@ -53,12 +58,14 @@ builder.Services.AddScoped<ITenantContext, TenantContext>();
 // Query services
 builder.Services.AddScoped<CaseQueryService>();
 builder.Services.AddScoped<ReportingService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<ReasonTaxonomySyncService>();
 builder.Services.AddScoped<InterventionRuleEngine>();
 builder.Services.AddScoped<LetterGenerationService>();
 builder.Services.AddScoped<MeetingService>();
 builder.Services.AddScoped<InterventionAnalyticsService>();
 builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<RoiCalculatorService>();
 builder.Services.AddScoped<TierEvaluator>();
 builder.Services.AddScoped<MtssTierService>();
@@ -248,6 +255,17 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+// Authorization handlers
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+// Background services
+builder.Services.AddHostedService<AlertEvaluationService>();
+
+// Health checks
+builder.Services.AddHealthChecks()
+    .AddCheck<OutboxHealthCheck>("outbox")
+    .AddCheck<DeliverabilityHealthCheck>("deliverability");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -266,5 +284,16 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<NotificationsHub>("/hubs/notifications");
+
+// Health check endpoints
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false // Liveness probe - minimal check
+});
 
 app.Run();

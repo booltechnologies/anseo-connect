@@ -13,4 +13,8 @@
     <ProjectReference Include="..\..\Shared\AnseoConnect.Contracts\AnseoConnect.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\AnseoConnect.Data\AnseoConnect.Data.csproj" />
+  </ItemGroup>
+
 </Project>

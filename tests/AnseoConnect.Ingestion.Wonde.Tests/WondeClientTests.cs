@@ -23,8 +23,9 @@ public class WondeClientTests : IDisposable
         {
             BaseAddress = new Uri(_mockServer.Url!)
         };
-        var logger = new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger<WondeClient>();
-        _wondeClient = new WondeClient(_httpClient, "test-token", "localhost", logger, disposeHttpClient: false);
+        var loggerFactory = new Microsoft.Extensions.Logging.LoggerFactory();
+        var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<AnseoConnect.Ingestion.Wonde.Client.WondeClient>.Instance;
+        _wondeClient = new AnseoConnect.Ingestion.Wonde.Client.WondeClient(_httpClient, "test-token", "localhost", logger, disposeHttpClient: false);
     }
 
     [Fact]
@@ -135,7 +136,9 @@ public class WondeClientTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         _mockServer.LogEntries.Should().Contain(e => 
+            e.RequestMessage.Path != null &&
             e.RequestMessage.Path.Contains("/students") && 
+            e.RequestMessage.Query != null &&
             e.RequestMessage.Query.ContainsKey("updated_after"));
     }
 

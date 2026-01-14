@@ -39,6 +39,9 @@ public static class DependencyInjection
         services.AddScoped<TierClient>();
         services.AddScoped<EvidenceClient>();
         services.AddScoped<TimelineClient>();
+        services.AddScoped<PermissionsClient>();
+        services.AddScoped<AuditClient>();
+        services.AddScoped<AlertsClient>();
 
         return services;
     }
