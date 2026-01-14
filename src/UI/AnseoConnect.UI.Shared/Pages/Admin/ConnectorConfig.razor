@@ -1,0 +1,38 @@
+@page "/admin/connectors/config"
+@using DevExpress.Blazor
+@using Microsoft.AspNetCore.Components
+@inject AnseoConnect.Client.IApiClient ApiClient
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Connector Configuration</PageTitle>
+
+<DxLayout>
+    <DxLayoutItem Size="12">
+        <DxCard>
+            <CardHeaderTemplate>
+                <h3>SIS Connector Configuration</h3>
+            </CardHeaderTemplate>
+            <CardContentTemplate>
+                <p>Configure and manage SIS connectors for your schools.</p>
+                
+                <!-- TODO: Implement connector configuration UI -->
+                <!-- This should include:
+                - List of available connectors (Wonde, etc.)
+                - Enable/disable per school
+                - API key/token management
+                - Connection testing
+                - Sync schedule configuration
+                -->
+                
+                <DxAlert AlertStyle="Info">
+                    Connector configuration UI is under development.
+                    For now, connectors are configured via appsettings.json and environment variables.
+                </DxAlert>
+            </CardContentTemplate>
+        </DxCard>
+    </DxLayoutItem>
+</DxLayout>
+
+@code {
+    // TODO: Add code-behind for connector configuration
+}

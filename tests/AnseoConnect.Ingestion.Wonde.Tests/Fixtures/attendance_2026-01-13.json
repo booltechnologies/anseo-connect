@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+      "id": "attendance-1",
+      "student_id": "student-1",
+      "date": {
+        "date": "2026-01-13",
+        "timezone": "Europe/Dublin"
+      },
+      "period": {
+        "id": "period-am",
+        "name": "Morning",
+        "code": "AM"
+      },
+      "status": "PRESENT",
+      "absence": null
+    },
+    {
+      "id": "attendance-2",
+      "student_id": "student-2",
+      "date": {
+        "date": "2026-01-13",
+        "timezone": "Europe/Dublin"
+      },
+      "period": {
+        "id": "period-am",
+        "name": "Morning",
+        "code": "AM"
+      },
+      "status": "ABSENT",
+      "absence": {
+        "reason": {
+          "code": "ILL"
+        }
+      }
+    },
+    {
+      "id": "attendance-3",
+      "student_id": "student-1",
+      "date": {
+        "date": "2026-01-13",
+        "timezone": "Europe/Dublin"
+      },
+      "period": {
+        "id": "period-pm",
+        "name": "Afternoon",
+        "code": "PM"
+      },
+      "status": "LATE",
+      "absence": null
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "more": false,
+      "next": null,
+      "per_page": 100,
+      "current_page": 1
+    }
+  }
+}

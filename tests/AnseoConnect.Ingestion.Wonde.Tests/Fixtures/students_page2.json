@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": "student-3",
+      "mis_id": "MIS003",
+      "forename": "Michael",
+      "surname": "Brown",
+      "year_group": {
+        "name": "Year 2"
+      },
+      "contacts": [],
+      "active": true
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "more": false,
+      "next": null,
+      "per_page": 100,
+      "current_page": 2
+    }
+  }
+}

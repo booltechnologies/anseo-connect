@@ -9,9 +9,22 @@ jobs:
   build:
     runs-on: windows-latest
 
+    # DevExpress requires the license to be available to the build as an env var.
+    # (Exact casing matters.)
+    env:
+      DevExpress_License: ${{ secrets.DEVEXPRESS_LICENSE }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Register DevExpress NuGet source
+        run: >
+          dotnet nuget add source "https://nuget.devexpress.com/api/v3/index.json"
+          -n devexpress-nuget
+          -u DevExpress
+          -p "${{ secrets.DEVEXPRESS_FEED_AUTH_KEY }}"
+          --store-password-in-clear-text
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4

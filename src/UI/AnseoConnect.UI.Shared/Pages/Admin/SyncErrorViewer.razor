@@ -1,0 +1,37 @@
+@page "/admin/connectors/errors"
+@using DevExpress.Blazor
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Sync Error Viewer</PageTitle>
+
+<DxLayout>
+    <DxLayoutItem Size="12">
+        <DxCard>
+            <CardHeaderTemplate>
+                <h3>SIS Sync Error Viewer</h3>
+            </CardHeaderTemplate>
+            <CardContentTemplate>
+                <p>View and triage sync errors and failed operations.</p>
+                
+                <!-- TODO: Implement error viewer UI -->
+                <!-- This should include:
+                - Filterable grid of sync errors
+                - Group by sync run, entity type, school
+                - Error details with raw payload viewer
+                - Retry functionality
+                - Export error reports
+                - Dead-letter queue management
+                -->
+                
+                <DxAlert AlertStyle="Info">
+                    Sync error viewer UI is under development.
+                    Sync errors are recorded in the SyncError table and can be queried via API.
+                </DxAlert>
+            </CardContentTemplate>
+        </DxCard>
+    </DxLayoutItem>
+</DxLayout>
+
+@code {
+    // TODO: Add code-behind for error viewer
+}

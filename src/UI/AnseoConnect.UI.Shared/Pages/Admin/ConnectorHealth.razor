@@ -1,0 +1,38 @@
+@page "/admin/connectors/health"
+@using DevExpress.Blazor
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Connector Health Dashboard</PageTitle>
+
+<DxLayout>
+    <DxLayoutItem Size="12">
+        <DxCard>
+            <CardHeaderTemplate>
+                <h3>SIS Connector Health Dashboard</h3>
+            </CardHeaderTemplate>
+            <CardContentTemplate>
+                <p>Monitor the health and status of SIS connector sync operations.</p>
+                
+                <!-- TODO: Implement health dashboard UI -->
+                <!-- This should include:
+                - Grid/table showing all schools and their connector status
+                - Last sync time
+                - Success/failure rates
+                - Error counts
+                - Health status indicators (Healthy/Warning/Unhealthy)
+                - Drill-down to sync run details
+                - Alerts panel
+                -->
+                
+                <DxAlert AlertStyle="Info">
+                    Health dashboard UI is under development.
+                    Health monitoring is available via the ConnectorHealthService API.
+                </DxAlert>
+            </CardContentTemplate>
+        </DxCard>
+    </DxLayoutItem>
+</DxLayout>
+
+@code {
+    // TODO: Add code-behind for health dashboard
+}

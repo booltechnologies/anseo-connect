@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "id": "student-1",
+      "mis_id": "MIS001",
+      "forename": "John",
+      "surname": "Doe",
+      "year_group": {
+        "name": "Year 1"
+      },
+      "contacts": [
+        {
+          "id": "contact-1",
+          "relationship": "Parent"
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "student-2",
+      "mis_id": "MIS002",
+      "forename": "Jane",
+      "surname": "Smith",
+      "year_group": {
+        "name": "Year 1"
+      },
+      "contacts": [
+        {
+          "id": "contact-2",
+          "relationship": "Guardian"
+        }
+      ],
+      "active": true
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "more": true,
+      "next": "https://api.wonde.com/v1.0/schools/test-school-123/students?cursor=abc123",
+      "per_page": 100,
+      "current_page": 1
+    }
+  }
+}

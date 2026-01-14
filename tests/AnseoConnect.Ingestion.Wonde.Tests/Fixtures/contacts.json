@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "id": "contact-1",
+      "mis_id": "CONT001",
+      "forename": "Parent",
+      "surname": "One",
+      "contact_details": [
+        {
+          "type": "mobile",
+          "value": "+353851234567"
+        },
+        {
+          "type": "email",
+          "value": "parent.one@example.com"
+        }
+      ]
+    },
+    {
+      "id": "contact-2",
+      "mis_id": "CONT002",
+      "forename": "Guardian",
+      "surname": "Two",
+      "contact_details": [
+        {
+          "type": "mobile",
+          "value": "+353859876543"
+        },
+        {
+          "type": "email",
+          "value": "guardian.two@example.com"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "more": false,
+      "next": null,
+      "per_page": 100,
+      "current_page": 1
+    }
+  }
+}
