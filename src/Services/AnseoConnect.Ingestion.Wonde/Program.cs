@@ -1,8 +1,10 @@
+using AnseoConnect.Contracts.SIS;
 using AnseoConnect.Data;
 using AnseoConnect.Data.MultiTenancy;
 using AnseoConnect.Ingestion.Wonde.Client;
 using AnseoConnect.Ingestion.Wonde.Services;
 using AnseoConnect.Shared;
+using AnseoConnect.Ingestion.Wonde;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http;
 using System.Net.Http.Headers;
@@ -61,6 +63,9 @@ builder.Services.AddScoped<IWondeClient>(sp =>
 });
 
 builder.Services.AddScoped<IngestionService>();
+builder.Services.AddScoped<AnseoConnect.Ingestion.Wonde.Services.IReasonCodeMapper, AnseoConnect.Ingestion.Wonde.Services.ReasonCodeMapper>();
+builder.Services.AddScoped<AnseoConnect.Ingestion.Wonde.Services.IConnectorHealthService, AnseoConnect.Ingestion.Wonde.Services.ConnectorHealthService>();
+builder.Services.AddScoped<ISisConnector, WondeConnector>();
 
 var app = builder.Build();
 

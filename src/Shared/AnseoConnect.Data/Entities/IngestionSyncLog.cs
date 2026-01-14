@@ -16,5 +16,20 @@ public sealed class IngestionSyncLog : SchoolEntity
     public int ErrorCount { get; set; }
     public int MismatchCount { get; set; }
 
+    /// <summary>
+    /// Alert threshold for error rate (percentage).
+    /// </summary>
+    public decimal? ErrorRateThreshold { get; set; }
+
+    /// <summary>
+    /// Alert threshold for mismatch count.
+    /// </summary>
+    public int? MismatchThreshold { get; set; }
+
+    /// <summary>
+    /// Details about mismatches encountered (JSON format).
+    /// </summary>
+    public string? MismatchDetailsJson { get; set; }
+
     public string? Notes { get; set; }
 }

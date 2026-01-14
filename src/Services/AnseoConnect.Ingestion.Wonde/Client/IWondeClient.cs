@@ -42,4 +42,19 @@ public interface IWondeClient
         DateOnly? fromDate = null,
         DateOnly? toDate = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets paginated list of classes/groups.
+    /// </summary>
+    Task<WondePagedResponse<WondeClass>> GetClassesAsync(
+        string schoolId,
+        DateTimeOffset? updatedAfter = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets paginated list of timetable periods.
+    /// </summary>
+    Task<WondePagedResponse<WondeTimetable>> GetTimetableAsync(
+        string schoolId,
+        CancellationToken cancellationToken = default);
 }

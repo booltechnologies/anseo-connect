@@ -79,6 +79,14 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
     public DbSet<TierAssignment> TierAssignments => Set<TierAssignment>();
     public DbSet<TierAssignmentHistory> TierAssignmentHistories => Set<TierAssignmentHistory>();
     public DbSet<CaseIntervention> CaseInterventions => Set<CaseIntervention>();
+    public DbSet<SyncRun> SyncRuns => Set<SyncRun>();
+    public DbSet<SyncMetric> SyncMetrics => Set<SyncMetric>();
+    public DbSet<SyncError> SyncErrors => Set<SyncError>();
+    public DbSet<SyncPayloadArchive> SyncPayloadArchives => Set<SyncPayloadArchive>();
+    public DbSet<ClassGroup> ClassGroups => Set<ClassGroup>();
+    public DbSet<StudentClassEnrollment> StudentClassEnrollments => Set<StudentClassEnrollment>();
+    public DbSet<ReasonCodeMapping> ReasonCodeMappings => Set<ReasonCodeMapping>();
+    public DbSet<SchoolSyncState> SchoolSyncStates => Set<SchoolSyncState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -803,6 +811,163 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
             .WithMany(x => x.SafeguardingAlerts)
             .HasForeignKey(x => x.CaseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // SyncRun and related entities
+        modelBuilder.Entity<SyncRun>().HasKey(x => x.SyncRunId);
+        modelBuilder.Entity<SyncRun>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.ProviderId, x.StartedAtUtc })
+            .HasDatabaseName("IX_SyncRuns_Provider_Started");
+        modelBuilder.Entity<SyncRun>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.Status })
+            .HasDatabaseName("IX_SyncRuns_Status");
+        modelBuilder.Entity<SyncRun>()
+            .Property(x => x.ProviderId)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SyncRun>()
+            .Property(x => x.SyncType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SyncRun>()
+            .Property(x => x.Status)
+            .HasMaxLength(32);
+
+        modelBuilder.Entity<SyncMetric>().HasKey(x => x.SyncMetricId);
+        modelBuilder.Entity<SyncMetric>()
+            .HasIndex(x => x.SyncRunId)
+            .HasDatabaseName("IX_SyncMetrics_SyncRun");
+        modelBuilder.Entity<SyncMetric>()
+            .Property(x => x.EntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SyncMetric>()
+            .HasOne(x => x.SyncRun)
+            .WithMany(x => x.Metrics)
+            .HasForeignKey(x => x.SyncRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SyncError>().HasKey(x => x.SyncErrorId);
+        modelBuilder.Entity<SyncError>()
+            .HasIndex(x => x.SyncRunId)
+            .HasDatabaseName("IX_SyncErrors_SyncRun");
+        modelBuilder.Entity<SyncError>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_SyncErrors_OccurredAt");
+        modelBuilder.Entity<SyncError>()
+            .Property(x => x.EntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SyncError>()
+            .Property(x => x.ExternalId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<SyncError>()
+            .Property(x => x.RawPayloadJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<SyncError>()
+            .HasOne(x => x.SyncRun)
+            .WithMany(x => x.Errors)
+            .HasForeignKey(x => x.SyncRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SyncPayloadArchive>().HasKey(x => x.ArchiveId);
+        modelBuilder.Entity<SyncPayloadArchive>()
+            .HasIndex(x => x.SyncRunId)
+            .HasDatabaseName("IX_SyncPayloadArchives_SyncRun");
+        modelBuilder.Entity<SyncPayloadArchive>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.ExpiresAtUtc })
+            .HasDatabaseName("IX_SyncPayloadArchives_ExpiresAt");
+        modelBuilder.Entity<SyncPayloadArchive>()
+            .Property(x => x.EntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SyncPayloadArchive>()
+            .Property(x => x.ExternalId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<SyncPayloadArchive>()
+            .Property(x => x.PayloadJson)
+            .HasColumnType("nvarchar(max)");
+
+        // ClassGroup and StudentClassEnrollment
+        modelBuilder.Entity<ClassGroup>().HasKey(x => x.ClassGroupId);
+        modelBuilder.Entity<ClassGroup>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.ExternalClassId })
+            .IsUnique()
+            .HasDatabaseName("IX_ClassGroups_ExternalId");
+        modelBuilder.Entity<ClassGroup>()
+            .Property(x => x.ExternalClassId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<ClassGroup>()
+            .Property(x => x.Name)
+            .HasMaxLength(256);
+        modelBuilder.Entity<ClassGroup>()
+            .Property(x => x.Code)
+            .HasMaxLength(64);
+        modelBuilder.Entity<ClassGroup>()
+            .Property(x => x.AcademicYear)
+            .HasMaxLength(32);
+        modelBuilder.Entity<ClassGroup>()
+            .Property(x => x.Source)
+            .HasMaxLength(64);
+
+        modelBuilder.Entity<StudentClassEnrollment>().HasKey(x => x.EnrollmentId);
+        modelBuilder.Entity<StudentClassEnrollment>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.StudentId, x.ClassGroupId })
+            .IsUnique()
+            .HasDatabaseName("IX_StudentClassEnrollments_Student_Class");
+        modelBuilder.Entity<StudentClassEnrollment>()
+            .HasIndex(x => x.StudentId)
+            .HasDatabaseName("IX_StudentClassEnrollments_Student");
+        modelBuilder.Entity<StudentClassEnrollment>()
+            .HasIndex(x => x.ClassGroupId)
+            .HasDatabaseName("IX_StudentClassEnrollments_ClassGroup");
+        modelBuilder.Entity<StudentClassEnrollment>()
+            .HasOne(x => x.Student)
+            .WithMany()
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<StudentClassEnrollment>()
+            .HasOne(x => x.ClassGroup)
+            .WithMany(x => x.StudentEnrollments)
+            .HasForeignKey(x => x.ClassGroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ReasonCodeMapping
+        modelBuilder.Entity<ReasonCodeMapping>().HasKey(x => x.ReasonCodeMappingId);
+        modelBuilder.Entity<ReasonCodeMapping>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.ProviderId, x.ProviderCode })
+            .IsUnique()
+            .HasDatabaseName("IX_ReasonCodeMappings_Provider_Code");
+        modelBuilder.Entity<ReasonCodeMapping>()
+            .Property(x => x.ProviderId)
+            .HasMaxLength(64);
+        modelBuilder.Entity<ReasonCodeMapping>()
+            .Property(x => x.ProviderCode)
+            .HasMaxLength(128);
+        modelBuilder.Entity<ReasonCodeMapping>()
+            .Property(x => x.ProviderDescription)
+            .HasMaxLength(512);
+        modelBuilder.Entity<ReasonCodeMapping>()
+            .Property(x => x.InternalCode)
+            .HasMaxLength(128);
+
+        // SchoolSyncState
+        modelBuilder.Entity<SchoolSyncState>().HasKey(x => x.SchoolSyncStateId);
+        modelBuilder.Entity<SchoolSyncState>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.ProviderId, x.EntityType })
+            .IsUnique()
+            .HasDatabaseName("IX_SchoolSyncStates_Provider_Entity");
+        modelBuilder.Entity<SchoolSyncState>()
+            .Property(x => x.ProviderId)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SchoolSyncState>()
+            .Property(x => x.EntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<SchoolSyncState>()
+            .Property(x => x.LastError)
+            .HasMaxLength(2048);
+
+        // Extend IngestionSyncLog
+        modelBuilder.Entity<IngestionSyncLog>()
+            .Property(x => x.MismatchDetailsJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<IngestionSyncLog>()
+            .Property(x => x.ErrorRateThreshold)
+            .HasColumnType("decimal(18,2)");
     }
 
     public override int SaveChanges()

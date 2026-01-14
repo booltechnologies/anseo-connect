@@ -103,6 +103,36 @@ public sealed class WondeClient : IWondeClient, IDisposable
         return await GetAllPagesAsync<WondeStudentAbsence>(url, cancellationToken);
     }
 
+    public async Task<WondePagedResponse<WondeClass>> GetClassesAsync(
+        string schoolId,
+        DateTimeOffset? updatedAfter = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>();
+        if (updatedAfter.HasValue)
+        {
+            queryParams.Add($"updated_after={updatedAfter.Value:yyyy-MM-dd HH:mm:ss}");
+        }
+        queryParams.Add("cursor=true");
+        queryParams.Add("include=students");
+
+        var url = BuildUrl(_defaultDomain, $"schools/{schoolId}/classes", queryParams);
+        return await GetAllPagesAsync<WondeClass>(url, cancellationToken);
+    }
+
+    public async Task<WondePagedResponse<WondeTimetable>> GetTimetableAsync(
+        string schoolId,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>
+        {
+            "cursor=true"
+        };
+
+        var url = BuildUrl(_defaultDomain, $"schools/{schoolId}/timetable", queryParams);
+        return await GetAllPagesAsync<WondeTimetable>(url, cancellationToken);
+    }
+
     private string BuildUrl(string domain, string resource, List<string>? queryParams = null)
     {
         var baseUrl = $"https://{domain}/v1.0/{resource}";
