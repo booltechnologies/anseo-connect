@@ -42,6 +42,7 @@ builder.Services.AddSingleton<ReasonTaxonomyService>();
 // Workflow services
 builder.Services.AddScoped<AbsenceDetectionService>();
 builder.Services.AddScoped<CaseService>();
+builder.Services.AddScoped<TimelineService>();
 builder.Services.AddScoped<SafeguardingService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<ReviewWindowService>();

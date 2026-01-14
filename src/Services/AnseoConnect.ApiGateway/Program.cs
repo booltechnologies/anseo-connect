@@ -65,6 +65,7 @@ builder.Services.AddScoped<MtssTierService>();
 builder.Services.AddScoped<EvidencePackIntegrityService>();
 builder.Services.AddScoped<EvidencePackBuilder>();
 builder.Services.AddScoped<CaseService>();
+builder.Services.AddScoped<TimelineService>();
 builder.Services.AddSingleton<NotificationBroadcaster>();
 // Email/SMS senders for guardian auth
 var sendGridKey = builder.Configuration["SendGrid:ApiKey"] ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY");

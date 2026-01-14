@@ -12,10 +12,6 @@
     <DxGridDataColumn Field="@nameof(TierDefinitionDto.Description)" Caption="Description" />
     <DxGridDataColumn Field="@nameof(TierDefinitionDto.ReviewIntervalDays)" Caption="Review Interval (Days)" />
     <DxGridDataColumn Field="@nameof(TierDefinitionDto.IsActive)" Caption="Active" />
-    <DxGridCommandColumn>
-        <DxGridCommandColumnEditCommand />
-        <DxGridCommandColumnDeleteCommand />
-    </DxGridCommandColumn>
 </DxGrid>
 
 <DxButton Text="Add Tier Definition" Click="@(() => _showDialog = true)" />
@@ -23,8 +19,8 @@
 @if (_showDialog)
 {
     <DxPopup @bind-Visible="_showDialog" HeaderText="Tier Definition">
-        <BodyTemplate>
-            <EditForm Model="@_editingTier" OnValidSubmit="@SaveTier">
+        <BodyTemplate Context="popupContext">
+            <EditForm Model="@_editingTier" OnValidSubmit="@SaveTier" Context="editContext">
                 <DataAnnotationsValidator />
                 <DxFormLayout>
                     <DxFormLayoutItem Caption="Tier Number">
@@ -40,7 +36,7 @@
                         <DxSpinEdit @bind-Value="@_editingTier.ReviewIntervalDays" Min="1" />
                     </DxFormLayoutItem>
                     <DxFormLayoutItem Caption="Active">
-                        <DxCheckBox @bind-Value="@_editingTier.IsActive" />
+                        <DxCheckBox T="bool" @bind-Value="@_editingTier.IsActive" />
                     </DxFormLayoutItem>
                 </DxFormLayout>
                 <DxButton Text="Save" SubmitFormOnEnter="true" />

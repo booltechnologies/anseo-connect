@@ -1,0 +1,244 @@
+@page "/students/{StudentId:guid}/timeline"
+@attribute [Authorize]
+@using DevExpress.Blazor
+@using AnseoConnect.Client
+@using AnseoConnect.Client.Models
+@using AnseoConnect.Contracts.DTOs
+
+<PageTitle>Student Support Timeline</PageTitle>
+
+@if (_studentName == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="timeline-header">
+        <h2>@_studentName - Support Timeline</h2>
+    </div>
+
+    <DxFormLayout CssClass="mb-3">
+        <DxFormLayoutItem Caption="Date Range">
+            <DxDateEdit T="DateOnly" @bind-Value="_filterFrom" Caption="From" />
+            <DxDateEdit T="DateOnly" @bind-Value="_filterTo" Caption="To" />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption="Search">
+            <DxTextBox @bind-Text="_searchTerm" Placeholder="Search timeline..." />
+        </DxFormLayoutItem>
+        <DxFormLayoutItem Caption=" ">
+            <DxButton Text="Apply Filters" Click="LoadTimelineAsync" Enabled="!_busy" />
+            <DxButton Text="Clear" Click="ClearFilters" RenderStyle="ButtonRenderStyle.Secondary" />
+            <DxButton Text="Export" Click="ExportTimeline" RenderStyle="ButtonRenderStyle.Info" />
+        </DxFormLayoutItem>
+    </DxFormLayout>
+    
+    <div class="mb-3">
+        <strong>Categories:</strong>
+        @foreach (var category in _categoryOptions)
+        {
+            var isChecked = _selectedCategories.Contains(category);
+            var categoryCopy = category; // Capture loop variable
+            <DxCheckBox Checked="isChecked" CheckedChanged="@((bool value) => SetCategoryChecked(categoryCopy, value))" Text="@category" CssClass="d-inline-block me-3" />
+        }
+    </div>
+
+    @if (_timelineResult != null && _timelineResult.Items.Count > 0)
+    {
+        <div class="timeline-container">
+            @foreach (var evt in _timelineResult.Items)
+            {
+                <div class="timeline-event" data-category="@evt.Category">
+                    <div class="timeline-event-header">
+                        <span class="timeline-event-type">@evt.EventType</span>
+                        <span class="timeline-event-time">@evt.OccurredAtUtc.ToLocalTime().ToString("g")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(evt.Title))
+                    {
+                        <div class="timeline-event-title">@evt.Title</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(evt.Summary))
+                    {
+                        <div class="timeline-event-summary">@evt.Summary</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(evt.ActorName))
+                    {
+                        <div class="timeline-event-actor">By: @evt.ActorName</div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (_timelineResult.HasMore)
+        {
+            <DxButton Text="Load More" Click="LoadMoreAsync" Enabled="!_busy" />
+        }
+    }
+    else if (_timelineResult != null && _timelineResult.Items.Count == 0)
+    {
+        <p>No timeline events found.</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <p class="text-danger mt-2">@_error</p>
+    }
+}
+
+@code {
+    [Parameter] public Guid StudentId { get; set; }
+    [Inject] private TimelineClient TimelineClient { get; set; } = default!;
+    [Inject] private StudentsClient StudentsClient { get; set; } = default!;
+
+    private string? _studentName;
+    private PagedResult<TimelineEventDto>? _timelineResult;
+    private bool _busy;
+    private string? _error;
+    private string _searchTerm = string.Empty;
+    private DateOnly? _filterFrom;
+    private DateOnly? _filterTo;
+    private List<string> _selectedCategories = new();
+    
+    private readonly List<string> _categoryOptions = new()
+    {
+        "ATTENDANCE",
+        "COMMS",
+        "INTERVENTION",
+        "MEETING",
+        "TASK",
+        "EVIDENCE",
+        "TIER",
+        "SAFEGUARDING",
+        "CASE"
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadStudentInfo();
+        await LoadTimelineAsync();
+    }
+
+    private async Task LoadStudentInfo()
+    {
+        var profile = await StudentsClient.GetStudentAsync(StudentId);
+        _studentName = profile?.Summary.Name;
+    }
+
+    private async Task LoadTimelineAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var fromUtc = _filterFrom.HasValue ? new DateTimeOffset(_filterFrom.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : (DateTimeOffset?)null;
+            var toUtc = _filterTo.HasValue ? new DateTimeOffset(_filterTo.Value.ToDateTime(TimeOnly.MinValue).AddDays(1), TimeSpan.Zero) : (DateTimeOffset?)null;
+            
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                _timelineResult = await TimelineClient.SearchTimelineAsync(StudentId, _searchTerm, 0, 50);
+            }
+            else
+            {
+                _timelineResult = await TimelineClient.GetStudentTimelineAsync(
+                    StudentId,
+                    fromUtc,
+                    toUtc,
+                    _selectedCategories.Count > 0 ? _selectedCategories.ToArray() : null,
+                    null,
+                    null,
+                    0,
+                    50);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error loading timeline: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        if (_timelineResult == null) return;
+        
+        _busy = true;
+        try
+        {
+            var fromUtc = _filterFrom.HasValue ? new DateTimeOffset(_filterFrom.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : (DateTimeOffset?)null;
+            var toUtc = _filterTo.HasValue ? new DateTimeOffset(_filterTo.Value.ToDateTime(TimeOnly.MinValue).AddDays(1), TimeSpan.Zero) : (DateTimeOffset?)null;
+            
+            PagedResult<TimelineEventDto>? moreResults;
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                moreResults = await TimelineClient.SearchTimelineAsync(StudentId, _searchTerm, _timelineResult.Items.Count, 50);
+            }
+            else
+            {
+                moreResults = await TimelineClient.GetStudentTimelineAsync(
+                    StudentId,
+                    fromUtc,
+                    toUtc,
+                    _selectedCategories.Count > 0 ? _selectedCategories.ToArray() : null,
+                    null,
+                    null,
+                    _timelineResult.Items.Count,
+                    50);
+            }
+            
+            if (moreResults != null && moreResults.Items.Count > 0)
+            {
+                _timelineResult = new PagedResult<TimelineEventDto>(
+                    _timelineResult.Items.Concat(moreResults.Items).ToList(),
+                    moreResults.TotalCount,
+                    _timelineResult.Skip,
+                    _timelineResult.Take + moreResults.Items.Count,
+                    moreResults.HasMore);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error loading more events: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _filterFrom = null;
+        _filterTo = null;
+        _selectedCategories.Clear();
+    }
+
+    private bool GetCategoryChecked(string category)
+    {
+        return _selectedCategories.Contains(category);
+    }
+    
+    private void SetCategoryChecked(string category, bool isChecked)
+    {
+        if (isChecked && !_selectedCategories.Contains(category))
+        {
+            _selectedCategories.Add(category);
+        }
+        else if (!isChecked && _selectedCategories.Contains(category))
+        {
+            _selectedCategories.Remove(category);
+        }
+    }
+
+    private void ExportTimeline()
+    {
+        var exportUrl = TimelineClient.GetExportUrl(
+            StudentId,
+            _filterFrom.HasValue ? new DateTimeOffset(_filterFrom.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : null,
+            _filterTo.HasValue ? new DateTimeOffset(_filterTo.Value.ToDateTime(TimeOnly.MinValue).AddDays(1), TimeSpan.Zero) : null,
+            _selectedCategories.Count > 0 ? _selectedCategories.ToArray() : null);
+        // Navigate to export URL or trigger download
+    }
+}

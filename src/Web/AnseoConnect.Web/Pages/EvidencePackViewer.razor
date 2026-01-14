@@ -12,10 +12,12 @@
     <DxGridDataColumn Field="@nameof(EvidencePackDto.DateRangeEnd)" Caption="Date Range End" />
     <DxGridDataColumn Field="@nameof(EvidencePackDto.GenerationPurpose)" Caption="Purpose" />
     <DxGridDataColumn Field="@nameof(EvidencePackDto.ContentHash)" Caption="Content Hash" />
-    <DxGridCommandColumn>
-        <DxGridCommandColumnCustomButton IconCssClass="dx-icon-download" Click="@DownloadPdf" />
-        <DxGridCommandColumnCustomButton IconCssClass="dx-icon-check" Click="@VerifyIntegrity" />
-    </DxGridCommandColumn>
+    <DxGridDataColumn Caption="Actions">
+        <CellDisplayTemplate Context="pack">
+            <DxButton CssClass="me-2" IconCssClass="dx-icon-download" Click="@(() => DownloadPdf(pack.DataItem as EvidencePackDto))" RenderStyle="ButtonRenderStyle.Secondary" />
+            <DxButton IconCssClass="dx-icon-check" Click="@(() => VerifyIntegrity(pack.DataItem as EvidencePackDto))" RenderStyle="ButtonRenderStyle.Secondary" />
+        </CellDisplayTemplate>
+    </DxGridDataColumn>
 </DxGrid>
 
 <DxButton Text="Generate New Pack" NavigateUrl="@($"/evidence/generate/{CaseId}")" />
@@ -23,7 +25,7 @@
 @if (_verificationResult != null)
 {
     <DxPopup @bind-Visible="@_showVerification" HeaderText="Integrity Verification">
-        <BodyTemplate>
+        <BodyTemplate Context="popupContent">
             <p>Verification Result: @(_verificationResult.IsValid ? "Valid" : "Invalid")</p>
         </BodyTemplate>
     </DxPopup>
@@ -32,6 +34,7 @@
 @code {
     [Parameter] public Guid CaseId { get; set; }
     [Inject] private EvidenceClient Client { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private List<EvidencePackDto> _packs = new();
     private IntegrityVerificationResult? _verificationResult;
@@ -47,13 +50,16 @@
         _packs = await Client.ListEvidencePacksAsync(CaseId);
     }
 
-    private void DownloadPdf(EvidencePackDto pack)
+    private void DownloadPdf(EvidencePackDto? pack)
     {
-        // Navigate to download URL
+        if (pack == null) return;
+        var url = Client.GetDownloadUrl(CaseId, pack.EvidencePackId);
+        Navigation.NavigateTo(url, forceLoad: true);
     }
 
-    private async Task VerifyIntegrity(EvidencePackDto pack)
+    private async Task VerifyIntegrity(EvidencePackDto? pack)
     {
+        if (pack == null) return;
         var isValid = await Client.VerifyIntegrityAsync(CaseId, pack.EvidencePackId);
         _verificationResult = new IntegrityVerificationResult { IsValid = isValid, PackId = pack.EvidencePackId };
         _showVerification = true;

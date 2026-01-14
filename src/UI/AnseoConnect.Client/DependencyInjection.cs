@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<TelemetryClient>();
         services.AddScoped<TierClient>();
         services.AddScoped<EvidenceClient>();
+        services.AddScoped<TimelineClient>();
 
         return services;
     }

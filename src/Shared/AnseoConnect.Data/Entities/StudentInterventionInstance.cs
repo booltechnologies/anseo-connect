@@ -15,5 +15,7 @@ public sealed class StudentInterventionInstance : SchoolEntity
     public string Status { get; set; } = "ACTIVE"; // ACTIVE, STOPPED, COMPLETED, ESCALATED
     public DateTimeOffset StartedAtUtc { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastStageAtUtc { get; set; }
+
+    public Case? Case { get; set; }
 }
 

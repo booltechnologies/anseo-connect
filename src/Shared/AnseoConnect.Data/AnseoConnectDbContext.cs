@@ -49,6 +49,7 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
     public DbSet<DeadLetterMessage> DeadLetterMessages => Set<DeadLetterMessage>();
     public DbSet<Case> Cases => Set<Case>();
     public DbSet<CaseTimelineEvent> CaseTimelineEvents => Set<CaseTimelineEvent>();
+    public DbSet<TimelineEvent> TimelineEvents => Set<TimelineEvent>();
     public DbSet<SafeguardingAlert> SafeguardingAlerts => Set<SafeguardingAlert>();
     public DbSet<SchoolSettings> SchoolSettings => Set<SchoolSettings>();
     public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
@@ -213,6 +214,11 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
         modelBuilder.Entity<StudentInterventionInstance>()
             .Property(x => x.Status)
             .HasMaxLength(32);
+        modelBuilder.Entity<StudentInterventionInstance>()
+            .HasOne(x => x.Case)
+            .WithMany()
+            .HasForeignKey(x => x.CaseId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<InterventionEvent>().HasKey(x => x.EventId);
         modelBuilder.Entity<InterventionEvent>()
@@ -423,6 +429,44 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
         modelBuilder.Entity<CaseTimelineEvent>()
             .HasIndex(x => new { x.TenantId, x.SchoolId, x.CaseId, x.CreatedAtUtc })
             .HasDatabaseName("IX_CaseTimelineEvents_Tenant_School_Case_Created");
+
+        modelBuilder.Entity<TimelineEvent>().HasKey(x => x.EventId);
+        modelBuilder.Entity<TimelineEvent>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.StudentId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_TimelineEvents_StudentId_OccurredAtUtc");
+        modelBuilder.Entity<TimelineEvent>()
+            .HasIndex(x => new { x.TenantId, x.CaseId, x.OccurredAtUtc })
+            .HasDatabaseName("IX_TimelineEvents_CaseId_OccurredAtUtc");
+        modelBuilder.Entity<TimelineEvent>()
+            .HasIndex(x => new { x.TenantId, x.SchoolId, x.StudentId, x.Category, x.OccurredAtUtc })
+            .HasDatabaseName("IX_TimelineEvents_Category");
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.EventType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.Category)
+            .HasMaxLength(32);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.SourceEntityType)
+            .HasMaxLength(64);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.ActorId)
+            .HasMaxLength(256);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.ActorName)
+            .HasMaxLength(256);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.Title)
+            .HasMaxLength(512);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.VisibilityScope)
+            .HasMaxLength(32);
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.MetadataJson)
+            .HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<TimelineEvent>()
+            .Property(x => x.SearchableText)
+            .HasColumnType("nvarchar(max)");
 
         modelBuilder.Entity<SafeguardingAlert>().HasKey(x => x.AlertId);
         modelBuilder.Entity<SafeguardingAlert>()
@@ -742,6 +786,17 @@ public sealed class AnseoConnectDbContext : IdentityDbContext<AppUser, IdentityR
             .WithMany(x => x.TimelineEvents)
             .HasForeignKey(x => x.CaseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TimelineEvent>()
+            .HasOne(x => x.Student)
+            .WithMany()
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<TimelineEvent>()
+            .HasOne(x => x.Case)
+            .WithMany()
+            .HasForeignKey(x => x.CaseId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<SafeguardingAlert>()
             .HasOne(x => x.Case)

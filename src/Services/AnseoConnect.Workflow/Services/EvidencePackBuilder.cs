@@ -155,7 +155,7 @@ public sealed class EvidencePackBuilder
                 page.Content()
                     .Column(col =>
                     {
-                        col.Item().Text("Table of Contents").FontSize(16).Bold().PaddingBottom(10);
+                        col.Item().PaddingBottom(10).Text("Table of Contents").FontSize(16).Bold();
                         // TOC will be populated as sections are added
                     });
             });
@@ -439,7 +439,7 @@ public sealed class EvidencePackBuilder
         return new AttendanceData
         {
             Summaries = summaries,
-            AvgAttendance = (decimal)summaries.Average(s => (double?)s.AttendancePercent) ?? 0,
+            AvgAttendance = (decimal)(summaries.Average(s => (double?)s.AttendancePercent) ?? 0d),
             TotalAbsences = summaries.Sum(s => (int?)s.TotalAbsenceDaysYTD) ?? 0
         };
     }

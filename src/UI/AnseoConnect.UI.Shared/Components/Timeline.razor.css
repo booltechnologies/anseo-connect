@@ -1,11 +1,86 @@
-.timeline {
-    background: #0f172a;
-    border: 1px solid #1e293b;
-    border-radius: 12px;
-    padding: 12px;
+.timeline-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0;
 }
 
-.empty {
-    color: #94a3b8;
+.timeline-event {
+    padding: 1rem;
+    border-left: 4px solid #007bff;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.timeline-event[data-category="ATTENDANCE"] {
+    border-left-color: #ffc107;
+}
+
+.timeline-event[data-category="COMMS"] {
+    border-left-color: #28a745;
+}
+
+.timeline-event[data-category="INTERVENTION"] {
+    border-left-color: #dc3545;
+}
+
+.timeline-event[data-category="MEETING"] {
+    border-left-color: #17a2b8;
+}
+
+.timeline-event[data-category="TASK"] {
+    border-left-color: #6f42c1;
+}
+
+.timeline-event[data-category="EVIDENCE"] {
+    border-left-color: #fd7e14;
+}
+
+.timeline-event[data-category="TIER"] {
+    border-left-color: #e83e8c;
+}
+
+.timeline-event[data-category="SAFEGUARDING"] {
+    border-left-color: #dc3545;
+}
+
+.timeline-event[data-category="CASE"] {
+    border-left-color: #6c757d;
+}
+
+.timeline-event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-event-type {
+    font-weight: 600;
+    color: #212529;
+}
+
+.timeline-event-time {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.timeline-event-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-event-summary {
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-event-actor {
+    font-size: 0.875rem;
+    color: #6c757d;
     font-style: italic;
+}
+
+.timeline-header {
+    margin-bottom: 1.5rem;
 }

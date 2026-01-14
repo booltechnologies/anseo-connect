@@ -6,25 +6,25 @@
 
 <h3>Generate Evidence Pack</h3>
 
-<EditForm Model="@_request" OnValidSubmit="@GeneratePack">
+<EditForm Model="@_request" OnValidSubmit="@GeneratePack" Context="editContext">
     <DataAnnotationsValidator />
-    <DxFormLayout>
+    <DxFormLayout Context="formContext">
         <DxFormLayoutItem Caption="Date Range Start">
-            <DxDateEdit @bind-Value="@_request.DateRangeStart" />
+            <DxDateEdit T="DateOnly" @bind-Value="@_request.DateRangeStart" />
         </DxFormLayoutItem>
         <DxFormLayoutItem Caption="Date Range End">
-            <DxDateEdit @bind-Value="@_request.DateRangeEnd" />
+            <DxDateEdit T="DateOnly" @bind-Value="@_request.DateRangeEnd" />
         </DxFormLayoutItem>
         <DxFormLayoutItem Caption="Include Sections">
-            <DxCheckBox @bind-Value="@_includeAttendance" Text="Attendance" />
-            <DxCheckBox @bind-Value="@_includeCommunications" Text="Communications" />
-            <DxCheckBox @bind-Value="@_includeLetters" Text="Letters" />
-            <DxCheckBox @bind-Value="@_includeMeetings" Text="Meetings" />
-            <DxCheckBox @bind-Value="@_includeTasks" Text="Tasks" />
-            <DxCheckBox @bind-Value="@_includeTierHistory" Text="Tier History" />
+            <DxCheckBox T="bool" @bind-Value="@_includeAttendance" Text="Attendance" />
+            <DxCheckBox T="bool" @bind-Value="@_includeCommunications" Text="Communications" />
+            <DxCheckBox T="bool" @bind-Value="@_includeLetters" Text="Letters" />
+            <DxCheckBox T="bool" @bind-Value="@_includeMeetings" Text="Meetings" />
+            <DxCheckBox T="bool" @bind-Value="@_includeTasks" Text="Tasks" />
+            <DxCheckBox T="bool" @bind-Value="@_includeTierHistory" Text="Tier History" />
         </DxFormLayoutItem>
         <DxFormLayoutItem Caption="Purpose">
-            <DxComboBox Data="@_purposes" @bind-Value="@_request.Purpose" />
+            <DxComboBox T="string" Data="@_purposes" @bind-Value="@_request.Purpose" />
         </DxFormLayoutItem>
     </DxFormLayout>
     <DxButton Text="Generate" SubmitFormOnEnter="true" />
@@ -39,18 +39,12 @@
 
 @if (_generatedPack != null)
 {
-    <DxCard>
-        <DxCardHeader>
-            <DxCardHeaderText>
-                <h5>Evidence Pack Generated</h5>
-            </DxCardHeaderText>
-        </DxCardHeader>
-        <DxCardBody>
-            <p>Pack ID: @_generatedPack.EvidencePackId</p>
-            <p>Content Hash: @_generatedPack.ContentHash</p>
-            <DxButton Text="Download PDF" NavigateUrl="@($"/api/cases/{CaseId}/evidence/{_generatedPack.EvidencePackId}/download")" />
-        </DxCardBody>
-    </DxCard>
+    <div class="dx-card p-3">
+        <h5>Evidence Pack Generated</h5>
+        <p>Pack ID: @_generatedPack.EvidencePackId</p>
+        <p>Content Hash: @_generatedPack.ContentHash</p>
+        <DxButton Text="Download PDF" NavigateUrl="@($"/api/cases/{CaseId}/evidence/{_generatedPack.EvidencePackId}/download")" />
+    </div>
 }
 
 @code {
@@ -80,7 +74,7 @@
         _isGenerating = true;
         try
         {
-            var sections = EvidencePackSections.None;
+            var sections = (EvidencePackSections)0;
             if (_includeAttendance) sections |= EvidencePackSections.Attendance;
             if (_includeCommunications) sections |= EvidencePackSections.Communications;
             if (_includeLetters) sections |= EvidencePackSections.Letters;
@@ -100,11 +94,11 @@
             _isGenerating = false;
         }
     }
-}
 
-public sealed class GenerateEvidencePackRequestModel
-{
-    public DateOnly DateRangeStart { get; set; }
-    public DateOnly DateRangeEnd { get; set; }
-    public string Purpose { get; set; } = string.Empty;
+    public sealed class GenerateEvidencePackRequestModel
+    {
+        public DateOnly DateRangeStart { get; set; }
+        public DateOnly DateRangeEnd { get; set; }
+        public string Purpose { get; set; } = string.Empty;
+    }
 }
